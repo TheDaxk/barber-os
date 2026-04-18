@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la *.sh *.bat *.ps1)",
+      "Bash(find . -name \"*.dart\" -type f -exec ls -lt {} +)",
+      "Skill(gsd-map-codebase)",
+      "Bash(wc:*)",
+      "Skill(gsd-plan-phase)",
+      "Skill(gsd-new-project)",
+      "Skill(gsd-execute-phase)",
+      "Bash(flutter analyze:*)",
+      "Bash(grep -rn \"agendar\\\\|Agendar\\\\|Novo Agendamento\" 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os\\\\lib\\\\features\\\\dashboard' --include=*.dart)",
+      "Bash(grep -rn \"ScheduleScreen\\\\|QuickAction\\\\|Acesso.Rapido\\\\|agendamento\" 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os\\\\lib' --include=*.dart)",
+      "Bash(grep -rn \"FloatingAction\\\\|Quick\\\\|quick\\\\|acesso_rapido\\\\|botao\" 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os\\\\lib' --include=*.dart)",
+      "Bash(grep -rn agendar 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os\\\\lib' --include=*.dart)",
+      "Bash(find 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual' -name *Guia*correcao*b* -o -name *guia*correcao*)",
+      "Bash(grep -rn \"upcoming\\\\|recentes\\\\|recent\" 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib' --include=*.dart)",
+      "Bash(find 'C:/Users/Pedro Lucas/Desktop/projetos/barber_os - atual/lib' -type f -name *.dart)",
+      "Bash(find 'C:/Users/Pedro Lucas/Desktop/projetos/barber_os - atual' -name *supabase*barberOS* -o -name *supabase*barberos*)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(flutter pub:*)",
+      "Bash(xxd -l 100 lib/features/team/providers/selected_unit_provider.dart)",
+      "Bash(flutter clean:*)",
+      "Bash(dart analyze:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(grep -r StateProvider 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib' --include=*.dart)",
+      "Bash(find 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos' -name *v2* -o -name *guia*melhorias*)",
+      "Bash(ls:*)",
+      "Bash(dir /s /b lib*.dart)",
+      "Bash(findstr /i \"provider\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''lib'' -Recurse -Filter ''*provider*'' | Select-Object -ExpandProperty FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual' -Recurse -Filter '*Tasks*Implementation*' | Select-Object -ExpandProperty FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\features\\\\units' -Recurse -Name\")",
+      "Bash(powershell -Command \"New-Item -Path 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\core\\\\utils' -ItemType Directory -Force\")",
+      "Bash(powershell -Command \"New-Item -Path 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\features\\\\reports\\\\presentation\\\\export_service.dart' -ItemType File -Force\")",
+      "Bash(dir /s /b 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\features\\\\clients')",
+      "Bash(flutter build:*)",
+      "Bash(git add:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
+}
