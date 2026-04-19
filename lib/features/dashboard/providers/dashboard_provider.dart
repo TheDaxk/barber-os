@@ -35,7 +35,7 @@ final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref)
 
   if (!isLeader && userProfile['barber_id'] != null) {
     // Filtro cirúrgico: mostra APENAS os lucros/comissões/agendamentos DESTE barbeiro
-    query = query.eq('barber_id', userProfile['barber_id']);
+    query = query.eq('barber_id', userProfile['barber_id'] as Object);
   }
 
   final response = await query.order('start_time', ascending: false);
@@ -64,7 +64,7 @@ final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref)
         comissoesHoje += commissionValue;
 
         // Atualizar Ranking
-        final barberId = barberData['id'];
+        final String barberId = barberData['id'].toString();
         final barberName = barberData['users']?['name'] ?? 'Desconhecido';
         
         if (!rankingMap.containsKey(barberId)) {
@@ -94,7 +94,7 @@ final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref)
   // 1. Próximos agendamentos (agendamentos futuros do dia)
   final upcomingOrders = orders
       .where((order) {
-        final startTime = DateTime.parse(order['start_time']).toLocal();
+        final startTime = DateTime.parse(order['start_time'] as String).toLocal();
         return order['status'] == 'open' && startTime.isAfter(now);
       })
       .take(3) // Apenas os próximos 3
@@ -103,7 +103,7 @@ final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref)
   // 2. Clientes em espera (comandas abertas que já deveriam ter começado)
   final waitingOrders = orders
       .where((order) {
-        final startTime = DateTime.parse(order['start_time']).toLocal();
+        final startTime = DateTime.parse(order['start_time'] as String).toLocal();
         return order['status'] == 'open' && startTime.isBefore(now);
       })
       .toList();

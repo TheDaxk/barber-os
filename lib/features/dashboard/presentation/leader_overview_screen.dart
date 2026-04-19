@@ -33,7 +33,7 @@ class LeaderOverviewScreen extends ConsumerWidget {
               const Spacer(),
               unitsAsync.when(
                 loading: () => const SizedBox(),
-                error: (_, __) => const SizedBox(),
+                error: (err, stack) => const SizedBox(),
                 data: (units) => _UnitDropdown(units: units, selectedId: selectedUnitId, ref: ref),
               ),
             ],
@@ -131,15 +131,15 @@ class LeaderOverviewScreen extends ConsumerWidget {
             ...orders.map((order) {
               final isClosed = order['status'] == 'closed';
               final total = ((order['total'] as num?)?.toDouble() ?? 0.0).toStringAsFixed(2);
-              final barber = order['barbers']?['users']?['name'] ?? '-';
-              final client = order['client_name'] ?? 'Avulso';
+              final barber = (order['barbers']?['users']?['name'] as String?) ?? '-';
+              final client = (order['client_name'] as String?) ?? 'Avulso';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 14,
-                      backgroundColor: isClosed ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                      backgroundColor: isClosed ? Colors.green.withValues(alpha: 0.15) : Colors.orange.withValues(alpha: 0.15),
                       child: Icon(isClosed ? Icons.check : Icons.access_time, color: isClosed ? Colors.green : Colors.orange, size: 14),
                     ),
                     const SizedBox(width: 12),
@@ -185,7 +185,7 @@ class LeaderOverviewScreen extends ConsumerWidget {
                   children: [
                     CircleAvatar(
                       radius: 14,
-                      backgroundColor: color.withOpacity(0.15),
+                      backgroundColor: color.withValues(alpha: 0.15),
                       child: Text('${e.key + 1}', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
                     const SizedBox(width: 12),
@@ -248,8 +248,8 @@ class LeaderOverviewScreen extends ConsumerWidget {
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isPositive ? Colors.green.withOpacity(0.4)
-              : Colors.red.withOpacity(0.4),
+          color: isPositive ? Colors.green.withValues(alpha: 0.4)
+              : Colors.red.withValues(alpha: 0.4),
           width: 1.5,
         ),
       ),

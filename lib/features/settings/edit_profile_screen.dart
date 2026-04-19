@@ -20,8 +20,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.userProfile['name'] ?? '');
-    _phoneController = TextEditingController(text: widget.userProfile['phone'] ?? '');
+    _nameController = TextEditingController(text: widget.userProfile['name'] as String? ?? '');
+    _phoneController = TextEditingController(text: widget.userProfile['phone'] as String? ?? '');
   }
 
   @override
@@ -96,7 +96,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
                     child: Text(
                       _nameController.text.isNotEmpty ? _nameController.text[0].toUpperCase() : 'U',
                       style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.blueAccent),
@@ -132,14 +132,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             
             // Campos apenas leitura (Email, Categoria)
             TextField(
-              controller: TextEditingController(text: widget.userProfile['email'] ?? ''),
+              controller: TextEditingController(text: widget.userProfile['email'] as String? ?? ''),
               readOnly: true,
               style: const TextStyle(color: Colors.grey),
               decoration: _inputDecoration('E-mail (Apenas Leitura)', Icons.email_outlined),
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: TextEditingController(text: widget.userProfile['category'] ?? 'Gestor'),
+              controller: TextEditingController(text: widget.userProfile['category'] as String? ?? 'Gestor'),
               readOnly: true,
               style: const TextStyle(color: Colors.grey),
               decoration: _inputDecoration('Cargo (Apenas Leitura)', Icons.badge_outlined),

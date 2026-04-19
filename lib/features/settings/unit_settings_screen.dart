@@ -130,7 +130,7 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
         updates['${dayLower}_off'] = !_isOpen[dia]!;
       }
 
-      await supabase.from('units').update(updates).eq('id', unitId);
+      await supabase.from('units').update(updates).eq('id', unitId as Object);
 
       ref.invalidate(unitSettingsProvider);
 
@@ -257,7 +257,7 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
                       _hasChanges = true;
                     });
                   },
-                  activeColor: Colors.green,
+                  activeTrackColor: Colors.green,
                 ),
               ],
             ),

@@ -46,7 +46,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _loadingItems = true);
     try {
       final supabase = ref.read(supabaseProvider);
-      final items = await fetchOrderItems(supabase, widget.appointment['id']);
+      final items = await fetchOrderItems(supabase, widget.appointment['id'] as String);
       setState(() {
         _orderItems = items;
         _calculateSubtotal();
@@ -83,10 +83,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final supabase = ref.read(supabaseProvider);
       final item = await addOrderItem(
         supabase: supabase,
-        orderId: widget.appointment['id'],
+        orderId: widget.appointment['id'] as String,
         itemType: 'product',
-        referenceId: product['id'],
-        name: product['name'],
+        referenceId: product['id'] as String,
+        name: product['name'] as String,
         unitPrice: (product['price'] as num).toDouble(),
         quantity: 1,
         commissionPct: 0,
@@ -119,7 +119,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final supabase = ref.read(supabaseProvider);
       final item = await addOrderItem(
         supabase: supabase,
-        orderId: widget.appointment['id'],
+        orderId: widget.appointment['id'] as String,
         itemType: 'extra',
         name: name,
         unitPrice: value,
@@ -159,7 +159,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _showProductsBottomSheet(List<Map<String, dynamic>> products) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.grey[900],
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -203,10 +203,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         final stock = (product['stock'] as num?)?.toInt() ?? 0;
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.blue.withOpacity(0.2),
+                            backgroundColor: Colors.blue.withValues(alpha: 0.2),
                             child: const Icon(Icons.inventory_2, color: Colors.blue, size: 20),
                           ),
-                          title: Text(product['name']),
+                          title: Text(product['name'] as String),
                           subtitle: Text(
                             'R\$ ${(product['price'] as num).toStringAsFixed(2)}'
                             '${stock > 0 ? " · $stock em estoque" : " · Sem estoque"}',
@@ -249,7 +249,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         'discount': _discount,
         'total': _finalTotal,
         'closed_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', widget.appointment['id']);
+      }).eq('id', widget.appointment['id'] as Object);
 
       ref.invalidate(appointmentsProvider);
       ref.invalidate(monthlyRevenueProvider);
@@ -291,7 +291,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 children: [
                   const Text('Resumo da Comanda', style: TextStyle(color: Colors.grey, fontSize: 14)),
                   const SizedBox(height: 8),
-                  Text(clientName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(clientName as String, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Row(children: [const Icon(Icons.face, size: 16, color: Colors.grey), const SizedBox(width: 8), Text('Atendido por $barberName', style: const TextStyle(color: Colors.grey))]),
                 ],
@@ -336,17 +336,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         child: Column(
                           children: _orderItems.map((item) {
                             return Dismissible(
-                              key: Key(item['id']),
+                              key: Key(item['id'] as String),
                               direction: DismissDirection.endToStart,
                               background: Container(
                                 alignment: Alignment.centerRight,
                                 padding: const EdgeInsets.only(right: 16),
-                                color: Colors.red.withOpacity(0.2),
+                                color: Colors.red.withValues(alpha: 0.2),
                                 child: const Icon(Icons.delete, color: Colors.red),
                               ),
-                              onDismissed: (_) => _removeItem(item['id']),
+                              onDismissed: (_) => _removeItem(item['id'] as String),
                               child: ListTile(
-                                title: Text(item['name']),
+                                title: Text(item['name'] as String),
                                 subtitle: Text('Qtd: ${item['quantity']}'),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -358,7 +358,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     const SizedBox(width: 8),
                                     IconButton(
                                       icon: const Icon(Icons.close, size: 18, color: Colors.grey),
-                                      onPressed: () => _removeItem(item['id']),
+                                      onPressed: () => _removeItem(item['id'] as String),
                                     ),
                                   ],
                                 ),
@@ -466,20 +466,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: _paymentMethods.map((method) {
                 final isSelected = _selectedPaymentMethod == method['id'];
                 return InkWell(
-                  onTap: () => setState(() => _selectedPaymentMethod = method['id']),
+                  onTap: () => setState(() => _selectedPaymentMethod = method['id'] as String?),
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.green.withOpacity(0.2) : Colors.grey[900],
+                      color: isSelected ? Colors.green.withValues(alpha: 0.2) : Colors.grey[900],
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: isSelected ? Colors.green : Colors.transparent, width: 2),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(method['icon'], color: isSelected ? Colors.green : Colors.white70, size: 20),
+                        Icon(method['icon'] as IconData?, color: isSelected ? Colors.green : Colors.white70, size: 20),
                         const SizedBox(width: 8),
-                        Flexible(child: Text(method['name'], style: TextStyle(color: isSelected ? Colors.green : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal), overflow: TextOverflow.ellipsis)),
+                        Flexible(child: Text(method['name'] as String, style: TextStyle(color: isSelected ? Colors.green : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal), overflow: TextOverflow.ellipsis)),
                       ],
                     ),
                   ),

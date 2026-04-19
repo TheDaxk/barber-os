@@ -49,7 +49,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
           groupedAppointments[todayStr] = [];
           
           for (var appt in activeAppointments) {
-            final startTime = DateTime.parse(appt['start_time']).toLocal();
+            final startTime = DateTime.parse(appt['start_time'] as String).toLocal();
             // Formatar de forma simples sem pacotes extra: DD/MM/YYYY
             final dateStr = '${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}/${startTime.year}';
             
@@ -101,7 +101,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateAppointmentScreen()));
+          Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const CreateAppointmentScreen()));
         },
         backgroundColor: Colors.white, foregroundColor: Colors.black, child: const Icon(Icons.add),
       ),
@@ -110,8 +110,8 @@ class ScheduleAgendaScreen extends ConsumerWidget {
 
   // 1. O CARD AGORA É CLICÁVEL
   Widget _buildAppointmentCard(BuildContext context, WidgetRef ref, Map<String, dynamic> appt) {
-    final startTime = DateTime.parse(appt['start_time']).toLocal();
-    final endTime = DateTime.parse(appt['end_time']).toLocal();
+    final startTime = DateTime.parse(appt['start_time'] as String).toLocal();
+    final endTime = DateTime.parse(appt['end_time'] as String).toLocal();
     final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
     final endTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
 
@@ -151,7 +151,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       Row(
                         children: [
-                          Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(clientName as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           if (isVip) ...[
                             const SizedBox(width: 4),
                             const Icon(Icons.workspace_premium, color: Colors.amber, size: 16),
@@ -179,7 +179,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
       return;
     }
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.grey[900],
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -199,7 +199,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<void>(
                         builder: (context) => CheckoutScreen(appointment: appt),
                       ),
                     );
@@ -207,11 +207,11 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                 ),
                 const Divider(color: Colors.white10),
                 ListTile(
-                  leading: CircleAvatar(backgroundColor: Colors.red.withOpacity(0.2), child: const Icon(Icons.close, color: Colors.red)),
+                  leading: CircleAvatar(backgroundColor: Colors.red.withValues(alpha: 0.2), child: const Icon(Icons.close, color: Colors.red)),
                   title: const Text('Cancelar Agendamento', style: TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
-                    _showCancelDialog(context, ref, appt['id']); // ABRE O POP-UP DE MOTIVO
+                    _showCancelDialog(context, ref, appt['id'] as String); // ABRE O POP-UP DE MOTIVO
                   },
                 ),
               ],
@@ -233,7 +233,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
       'Outro'
     ];
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) {
         return StatefulBuilder( // StatefulBuilder permite atualizar o Radio button dentro do Dialog
@@ -247,20 +247,24 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                 children: [
                   const Text('Por favor, informe o motivo do cancelamento:'),
                   const SizedBox(height: 16),
-                  ...reasons.map((reason) {
-                    return RadioListTile<String>(
-                      title: Text(reason, style: const TextStyle(fontSize: 14)),
-                      value: reason,
-                      groupValue: selectedReason,
-                      activeColor: Colors.red,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (value) {
-                        setStateDialog(() {
-                          selectedReason = value!;
-                        });
-                      },
-                    );
-                  }),
+                  RadioGroup<String>(
+                    groupValue: selectedReason,
+                    onChanged: (value) {
+                      setStateDialog(() {
+                        selectedReason = value!;
+                      });
+                    },
+                    child: Column(
+                      children: reasons.map((reason) {
+                        return RadioListTile<String>(
+                          title: Text(reason, style: const TextStyle(fontSize: 14)),
+                          value: reason,
+                          activeColor: Colors.red,
+                          contentPadding: EdgeInsets.zero,
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ],
               ),
               actions: [

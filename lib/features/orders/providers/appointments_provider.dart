@@ -18,7 +18,7 @@ final appointmentsProvider = FutureProvider.autoDispose<List<Map<String, dynamic
       .gte('start_time', startOfToday); // Busca de hoje para a frente
 
   if (!isLeader && userProfile['barber_id'] != null) {
-    query = query.eq('barber_id', userProfile['barber_id']);
+    query = query.eq('barber_id', userProfile['barber_id'] as Object);
   }
 
   final response = await query.order('start_time');

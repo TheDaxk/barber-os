@@ -25,7 +25,7 @@ class UnitDetailScreen extends ConsumerWidget {
           title: unitAsync.when(
             data: (unit) => Text((unit['name'] as String?) ?? 'Unidade'),
             loading: () => const Text('Carregando...'),
-            error: (_, __) => const Text('Unidade'),
+            error: (err, stack) => const Text('Unidade'),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -87,147 +87,152 @@ class _InfoTab extends StatelessWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => Center(child: Text('Erro: $err', style: const TextStyle(color: Colors.red))),
       data: (unit) {
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              color: Colors.grey[900],
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  color: Colors.grey[900],
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.business, color: Colors.green, size: 32),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.business, color: Colors.green, size: 32),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text((unit['name'] as String?) ?? 'Sem Nome', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                  if (unit['location'] != null && unit['location'].toString().isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(unit['location'] as String, style: TextStyle(color: Colors.grey[400])),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        if (unit['phone'] != null && unit['phone'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Row(
                             children: [
-                              Text((unit['name'] as String?) ?? 'Sem Nome', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                              if (unit['location'] != null && unit['location'].toString().isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(unit['location'] as String, style: TextStyle(color: Colors.grey[400])),
-                              ],
+                              const Icon(Icons.phone, color: Colors.grey, size: 18),
+                              const SizedBox(width: 8),
+                              Text(unit['phone'] as String, style: const TextStyle(fontSize: 16)),
                             ],
                           ),
-                        ),
+                        ],
                       ],
                     ),
-                    if (unit['phone'] != null && unit['phone'].toString().isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(Icons.phone, color: Colors.grey, size: 18),
-                          const SizedBox(width: 8),
-                          Text(unit['phone'] as String, style: const TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Horário de Funcionamento', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.green, size: 20),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (context) => BusinessHoursScreen(
+                              unitId: unitId,
+                              unitName: unitName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
-              ),
-            ),
+                const SizedBox(height: 8),
+                _buildScheduleCard(businessHoursAsync),
 
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Horário de Funcionamento', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.green, size: 20),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BusinessHoursScreen(
-                          unitId: unitId,
-                          unitName: unitName,
+                const SizedBox(height: 24),
+                const Text('Responsável', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                barbersAsync.when(
+                  loading: () => Card(
+                    color: Colors.grey[900],
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                  error: (err, _) => Card(
+                    color: Colors.grey[900],
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('Erro: $err', style: const TextStyle(color: Colors.red)),
+                    ),
+                  ),
+                  data: (barbers) {
+                    if (barbers.isEmpty) {
+                      return Card(
+                        color: Colors.grey[900],
+                        child: const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('Nenhum barbeiro nesta unidade', style: TextStyle(color: Colors.grey)),
                         ),
+                      );
+                    }
+                    final responsable = barbers.first;
+                    final name = (responsable['users']?['name'] as String?) ?? 'Desconhecido';
+                    final category = responsable['category'] ?? '';
+                    return Card(
+                      color: Colors.grey[900],
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.amber.withValues(alpha: 0.2),
+                          child: const Icon(Icons.star, color: Colors.amber),
+                        ),
+                        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text(category as String, style: TextStyle(color: Colors.grey[400])),
                       ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+                const Text('Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                barbersAsync.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (barbers) {
+                    if (barbers.isEmpty) return const SizedBox.shrink();
+
+                    final leader = barbers.where((b) => b['category'] == 'Barbeiro Líder').toList();
+                    final others = barbers.where((b) => b['category'] != 'Barbeiro Líder').toList();
+
+                    return Column(
+                      children: [
+                        ...leader.map((b) => _BarberTile(barber: b, isLeader: true)),
+                        ...others.map((b) => _BarberTile(barber: b, isLeader: false)),
+                      ],
                     );
                   },
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            _buildScheduleCard(businessHoursAsync),
-
-            const SizedBox(height: 24),
-            const Text('Responsável', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            barbersAsync.when(
-              loading: () => Card(
-                color: Colors.grey[900],
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              ),
-              error: (err, _) => Card(
-                color: Colors.grey[900],
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Erro: $err', style: const TextStyle(color: Colors.red)),
-                ),
-              ),
-              data: (barbers) {
-                if (barbers.isEmpty) {
-                  return Card(
-                    color: Colors.grey[900],
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Nenhum barbeiro nesta unidade', style: TextStyle(color: Colors.grey)),
-                    ),
-                  );
-                }
-                final responsable = barbers.first;
-                final name = (responsable['users']?['name'] as String?) ?? 'Desconhecido';
-                final category = responsable['category'] ?? '';
-                return Card(
-                  color: Colors.grey[900],
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.amber.withOpacity(0.2),
-                      child: const Icon(Icons.star, color: Colors.amber),
-                    ),
-                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(category as String, style: TextStyle(color: Colors.grey[400])),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 24),
-            const Text('Equipe', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            barbersAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (barbers) {
-                if (barbers.isEmpty) return const SizedBox.shrink();
-
-                final leader = barbers.where((b) => b['category'] == 'Barbeiro Líder').toList();
-                final others = barbers.where((b) => b['category'] != 'Barbeiro Líder').toList();
-
-                return Column(
-                  children: [
-                    ...leader.map((b) => _BarberTile(barber: b, isLeader: true)),
-                    ...others.map((b) => _BarberTile(barber: b, isLeader: false)),
-                  ],
-                );
-              },
-            ),
-          ],
+          ),
         );
       },
     );
@@ -295,7 +300,7 @@ class _BarberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = barber['users']?['name'] ?? 'Barbeiro';
+    final String name = barber['users']?['name']?.toString() ?? 'Barbeiro';
     final avatarUrl = barber['users']?['avatar_url'] as String?;
     return Card(
       color: Colors.grey[900],
@@ -304,7 +309,7 @@ class _BarberTile extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-          backgroundColor: Colors.blueAccent.withOpacity(0.15),
+          backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
           child: avatarUrl == null ? Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.blueAccent)) : null,
         ),
         title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -313,9 +318,9 @@ class _BarberTile extends StatelessWidget {
             ? Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.15),
+                  color: Colors.amber.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
                 ),
                 child: const Text('Responsável', style: TextStyle(fontSize: 11, color: Colors.amber)),
               )
@@ -338,88 +343,139 @@ class _FinanceTab extends StatelessWidget {
       data: (data) {
         final faturamento = (data['faturamento'] as num?)?.toDouble() ?? 0.0;
         final comissoes = (data['comissoes'] as num?)?.toDouble() ?? 0.0;
-        final fechadas = data['fechadas'] ?? 0;
-        final abertas = data['abertas'] ?? 0;
+        final despesas = (data['despesas'] as num?)?.toDouble() ?? 0.0;
+        final ticketMedio = (data['ticket_medio'] as num?)?.toDouble() ?? 0.0;
         final ranking = data['ranking'] as List<Map<String, dynamic>>? ?? [];
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              childAspectRatio: 1.4,
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                _buildMetricCard('Faturamento', 'R\$ ${faturamento.toStringAsFixed(2)}', Icons.attach_money, Colors.green),
-                _buildMetricCard('Comissões', 'R\$ ${comissoes.toStringAsFixed(2)}', Icons.account_balance_wallet, Colors.purple),
-                _buildMetricCard('Fechadas', '$fechadas', Icons.check_circle, Colors.blue),
-                _buildMetricCard('Abertas', '$abertas', Icons.timelapse, Colors.orange),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth > 700;
+                    return GridView.count(
+                      crossAxisCount: isDesktop ? 3 : 1,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      childAspectRatio: isDesktop ? 1.8 : 3.8,
+                      children: [
+                        _buildKpiCard('Faturamento', faturamento, Icons.trending_up_rounded, Colors.greenAccent),
+                        _buildKpiCard('Comissões', comissoes, Icons.handshake_outlined, Colors.orangeAccent),
+                        _buildKpiCard('Despesas', despesas, Icons.receipt_long_outlined, Colors.redAccent),
+                        _buildKpiCard('Ticket Médio', ticketMedio, Icons.confirmation_number_outlined, Colors.blueAccent),
+                        _buildKpiCard('Fechadas', (data['fechadas'] as num?)?.toDouble() ?? 0.0, Icons.check_circle_outline, Colors.cyanAccent, isCurrency: false),
+                        _buildKpiCard('Abertas', (data['abertas'] as num?)?.toDouble() ?? 0.0, Icons.timelapse_outlined, Colors.amber, isCurrency: false),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                const Text('Ranking de Barbeiros', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                if (ranking.isEmpty)
+                  Card(
+                    color: Colors.grey[900],
+                    child: const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: Text('Nenhum dado hoje', style: TextStyle(color: Colors.grey))),
+                    ),
+                  )
+                else
+                  Card(
+                    color: Colors.grey[900],
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Column(
+                      children: ranking.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final item = entry.value;
+                        final name = (item['name'] as String?) ?? 'Desconhecido';
+                        final revenue = (item['revenue'] as num?)?.toDouble() ?? 0.0;
+                        final count = item['count'] ?? 0;
+
+                        Color badgeColor = Colors.white10;
+                        Color textColor = Colors.white;
+                        if (idx == 0) { badgeColor = Colors.amber.withValues(alpha: 0.3); textColor = Colors.amber; }
+                        if (idx == 1) { badgeColor = Colors.grey.withValues(alpha: 0.5); textColor = Colors.grey[400]!; }
+                        if (idx == 2) { badgeColor = Colors.brown.withValues(alpha: 0.5); textColor = Colors.orangeAccent; }
+
+                        return ListTile(
+                          leading: CircleAvatar(backgroundColor: badgeColor, child: Text('${idx + 1}', style: TextStyle(color: textColor, fontWeight: FontWeight.bold))),
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: Text('$count atendimento${count != 1 ? 's' : ''}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                          trailing: Text('R\$ ${revenue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                        );
+                      }).toList(),
+                    ),
+                  ),
               ],
             ),
-            const SizedBox(height: 24),
-            const Text('Ranking de Barbeiros', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            if (ranking.isEmpty)
-              Card(
-                color: Colors.grey[900],
-                child: const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: Text('Nenhum dado hoje', style: TextStyle(color: Colors.grey))),
-                ),
-              )
-            else
-              Card(
-                color: Colors.grey[900],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Column(
-                  children: ranking.asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final item = entry.value;
-                    final name = (item['name'] as String?) ?? 'Desconhecido';
-                    final revenue = (item['revenue'] as num?)?.toDouble() ?? 0.0;
-                    final count = item['count'] ?? 0;
-
-                    Color badgeColor = Colors.white10;
-                    Color textColor = Colors.white;
-                    if (idx == 0) { badgeColor = Colors.amber.withOpacity(0.3); textColor = Colors.amber; }
-                    if (idx == 1) { badgeColor = Colors.grey.withOpacity(0.5); textColor = Colors.grey[400]!; }
-                    if (idx == 2) { badgeColor = Colors.brown.withOpacity(0.5); textColor = Colors.orangeAccent; }
-
-                    return ListTile(
-                      leading: CircleAvatar(backgroundColor: badgeColor, child: Text('${idx + 1}', style: TextStyle(color: textColor, fontWeight: FontWeight.bold))),
-                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('$count atendimento${count != 1 ? 's' : ''}', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                      trailing: Text('R\$ ${revenue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                    );
-                  }).toList(),
-                ),
-              ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      color: Colors.grey[900],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const Spacer(),
-            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 2),
-            Text(title.toUpperCase(), style: TextStyle(fontSize: 9, color: Colors.grey[500], fontWeight: FontWeight.bold)),
-          ],
-        ),
+  Widget _buildKpiCard(String title, double value, IconData icon, Color accentColor, {bool isCurrency = true}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 14, color: accentColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(color: Colors.grey[400], fontSize: 11, fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    isCurrency ? 'R\$ ${value.toStringAsFixed(2)}' : value.toInt().toString(),
+                    style: TextStyle(color: accentColor, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -449,51 +505,56 @@ class _OrdersTab extends ConsumerWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: orders.length,
-          itemBuilder: (context, index) {
-            final order = orders[index];
-            final startTime = DateTime.parse(order['start_time'] as String).toLocal();
-            final endTime = DateTime.parse(order['end_time'] as String).toLocal();
-            final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-            final endTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
-            final clientName = (order['client_name'] as String?) ?? 'Cliente Avulso';
-            final barberName = (order['barbers']?['users']?['name'] as String?) ?? 'Sem Barbeiro';
-            final status = (order['status'] as String?) ?? 'open';
-            final isClosed = status == 'closed';
-            final total = (order['total'] as num?)?.toDouble() ?? 0.0;
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                final startTime = DateTime.parse(order['start_time'] as String).toLocal();
+                final endTime = DateTime.parse(order['end_time'] as String).toLocal();
+                final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+                final endTimeStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+                final clientName = (order['client_name'] as String?) ?? 'Cliente Avulso';
+                final barberName = (order['barbers']?['users']?['name'] as String?) ?? 'Sem Barbeiro';
+                final status = (order['status'] as String?) ?? 'open';
+                final isClosed = status == 'closed';
+                final total = (order['total'] as num?)?.toDouble() ?? 0.0;
 
-            return Card(
-              color: Colors.grey[900],
-              margin: const EdgeInsets.only(bottom: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: isClosed ? Colors.green : Colors.orange, width: 3),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(12),
-                leading: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text('até', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
-                    Text(endTimeStr, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-                  ],
-                ),
-                title: Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(barberName, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('R\$ ${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    Text(isClosed ? 'Fechada' : 'Aberta', style: TextStyle(color: isClosed ? Colors.green : Colors.orange, fontSize: 11)),
-                  ],
-                ),
-              ),
-            );
-          },
+                return Card(
+                  color: Colors.grey[900],
+                  margin: const EdgeInsets.only(bottom: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: isClosed ? Colors.green : Colors.orange, width: 3),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('até', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+                        Text(endTimeStr, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                      ],
+                    ),
+                    title: Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(barberName, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('R\$ ${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text(isClosed ? 'Fechada' : 'Aberta', style: TextStyle(color: isClosed ? Colors.green : Colors.orange, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         );
       },
     );

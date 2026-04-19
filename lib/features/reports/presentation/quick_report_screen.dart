@@ -295,22 +295,28 @@ class _QuickReportScreenState extends ConsumerState<QuickReportScreen> {
 
           Color circleColor = Colors.white10;
           Color textColor = Colors.white;
+
           if (idx == 0) {
-            circleColor = Colors.amber.withOpacity(0.3);
+            circleColor = Colors.amber.withValues(alpha: 0.3);
             textColor = Colors.amber;
           } else if (idx == 1) {
-            circleColor = Colors.grey.withOpacity(0.5);
+            circleColor = Colors.grey.withValues(alpha: 0.5);
             textColor = Colors.grey[400]!;
           } else if (idx == 2) {
-            circleColor = Colors.brown.withOpacity(0.5);
+            circleColor = Colors.brown.withValues(alpha: 0.5);
             textColor = Colors.orangeAccent;
           }
 
           return Column(
             children: [
               ListTile(
-                leading: CircleAvatar(backgroundColor: circleColor, child: Text(
-                    '${idx + 1}', style: TextStyle(color: textColor, fontWeight: FontWeight.bold))),
+                leading: CircleAvatar(
+                  backgroundColor: circleColor,
+                  child: Text(
+                    '${idx + 1}',
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                  ),
+                ),
                 title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
                 trailing: Text('R\$ ${revenue.toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold)),

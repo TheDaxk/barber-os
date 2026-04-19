@@ -96,12 +96,30 @@ final unitMetricsProvider = FutureProvider.family.autoDispose<Map<String, dynami
     }
   }
 
+  // Buscar Despesas de Hoje
+  final todayDateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  final expensesResponse = await supabase
+      .from('expenses')
+      .select('amount')
+      .eq('unit_id', unitId)
+      .eq('expense_date', todayDateStr);
+  
+  final expensesList = List<Map<String, dynamic>>.from(expensesResponse);
+  double despesas = 0.0;
+  for (var exp in expensesList) {
+    despesas += (exp['amount'] as num?)?.toDouble() ?? 0.0;
+  }
+
   final rankingList = rankingMap.values.toList();
   rankingList.sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+
+  final ticketMedio = fechadas > 0 ? (faturamento / fechadas) : 0.0;
 
   return {
     'faturamento': faturamento,
     'comissoes': comissoes,
+    'despesas': despesas,
+    'ticket_medio': ticketMedio,
     'fechadas': fechadas,
     'abertas': abertas,
     'ranking': rankingList,

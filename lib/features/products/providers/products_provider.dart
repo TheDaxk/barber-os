@@ -12,7 +12,7 @@ final productsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>(
   final response = await supabase
       .from('products')
       .select('*')
-      .eq('unit_id', userRes['unit_id'])
+      .eq('unit_id', userRes['unit_id'] as Object)
       .order('name');
 
   return List<Map<String, dynamic>>.from(response);

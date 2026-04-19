@@ -75,7 +75,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       final finalDuration = _isComboMode ? _comboCalculatedDuration : _selectedDuration;
 
       await supabase.from('services').insert({
-        'unit_id': userRes['unit_id'],
+        'unit_id': userRes['unit_id'] as Object,
         'name': _nameController.text.trim(),
         'price': price,
         'duration_minutes': finalDuration,
@@ -110,6 +110,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
       await ref.read(supabaseProvider).from('services').update({'is_active': false}).eq('id', id);
       ref.invalidate(unitServicesProvider);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao apagar: $e')));
     }
   }
@@ -234,7 +235,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                             children: baseServices.map((service) {
                               final isChecked = _selectedSubServices.contains(service['id']);
                               return CheckboxListTile(
-                                title: Text(service['name']),
+                                title: Text(service['name'] as String),
                                 subtitle: Text('R\$ ${service['price']} • ${service['duration_minutes']} min', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                                 value: isChecked,
                                 activeColor: Colors.amber,
@@ -242,9 +243,9 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                                 onChanged: (val) {
                                   setState(() {
                                     if (val == true) {
-                                      _selectedSubServices.add(service['id']);
+                                      _selectedSubServices.add(service['id'] as String);
                                     } else {
-                                      _selectedSubServices.remove(service['id']);
+                                      _selectedSubServices.remove(service['id'] as String);
                                     }
                                   });
                                   _recalculateCombo(baseServices);
@@ -261,7 +262,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.withOpacity(0.3))),
+                        decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.amber.withValues(alpha: 0.3))),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -326,15 +327,15 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                     return ListTile(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Colors.white10)),
                       tileColor: Colors.grey[900],
-                      leading: CircleAvatar(backgroundColor: isCombo ? Colors.amber.withOpacity(0.2) : Colors.green.withOpacity(0.2), child: Icon(isCombo ? Icons.layers : Icons.content_cut, color: isCombo ? Colors.amber : Colors.green)),
+                      leading: CircleAvatar(backgroundColor: isCombo ? Colors.amber.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.2), child: Icon(isCombo ? Icons.layers : Icons.content_cut, color: isCombo ? Colors.amber : Colors.green)),
                       title: Row(
                         children: [
-                          Expanded(child: Text(service['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
-                          if (isCombo) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.amber.withOpacity(0.2), borderRadius: BorderRadius.circular(4)), child: const Text('COMBO', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)))
+                          Expanded(child: Text(service['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          if (isCombo) Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)), child: const Text('COMBO', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)))
                         ],
                       ),
                       subtitle: Text('R\$ $priceStr  •  ⏱ $durationStr', style: TextStyle(color: Colors.grey[400])),
-                      trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _deleteService(service['id'])),
+                      trailing: IconButton(icon: const Icon(Icons.delete_outline, color: Colors.redAccent), onPressed: () => _deleteService(service['id'] as String)),
                     );
                   },
                 );

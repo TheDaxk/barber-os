@@ -34,7 +34,7 @@ class WaitingListScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.check_circle_outline,
-                      size: 80, color: Colors.green.withOpacity(0.5)),
+                      size: 80, color: Colors.green.withValues(alpha: 0.5)),
                   const SizedBox(height: 16),
                   Text(
                     'Nenhum cliente em espera',
@@ -71,7 +71,7 @@ class WaitingListScreen extends ConsumerWidget {
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.orange.withOpacity(0.2),
+                    backgroundColor: Colors.orange.withValues(alpha: 0.2),
                     child: Text(
                       '${index + 1}',
                       style: const TextStyle(

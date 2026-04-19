@@ -21,7 +21,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   }
 
   void _showClientBottomSheet({Map<String, dynamic>? client}) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true, 
       backgroundColor: Colors.transparent, 
@@ -106,12 +106,12 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                             return ListTile(
                               contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
                               leading: CircleAvatar(
-                                backgroundColor: isPremium ? Colors.amber.withOpacity(0.2) : isBasic ? Colors.blue.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                                backgroundColor: isPremium ? Colors.amber.withValues(alpha: 0.2) : isBasic ? Colors.blue.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.2),
                                 child: Text(initial, style: TextStyle(color: isPremium ? Colors.amber : isBasic ? Colors.blue : Colors.green, fontWeight: FontWeight.bold)),
                               ),
                               title: Row(
                                 children: [
-                                  Flexible(child: Text(client['name'], style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                                  Flexible(child: Text(client['name'] as String, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
                                   if (isPremium) ...[
                                     const SizedBox(width: 8),
                                     const Icon(Icons.workspace_premium, color: Colors.amber, size: 18),
@@ -125,15 +125,15 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text(phone),
+                                  Text(phone as String),
                                   if (subscriptionPlan != null) ...[
                                     const SizedBox(height: 4),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: isPremium ? Colors.amber.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                                        color: isPremium ? Colors.amber.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: isPremium ? Colors.amber.withOpacity(0.5) : Colors.blue.withOpacity(0.5)),
+                                        border: Border.all(color: isPremium ? Colors.amber.withValues(alpha: 0.5) : Colors.blue.withValues(alpha: 0.5)),
                                       ),
                                       child: Text(
                                         isPremium ? '👑 Premium' : '⭐ Básico',
@@ -196,9 +196,9 @@ class _ClientFormBottomSheetState extends ConsumerState<ClientFormBottomSheet> {
   void initState() {
     super.initState();
     if (_isEditing) {
-      _nameController.text = widget.client!['name'] ?? '';
-      _phoneController.text = widget.client!['phone'] ?? '';
-      _notesController.text = widget.client!['notes'] ?? '';
+      _nameController.text = (widget.client!['name'] as String?) ?? '';
+      _phoneController.text = (widget.client!['phone'] as String?) ?? '';
+      _notesController.text = (widget.client!['notes'] as String?) ?? '';
       _subscriptionPlan = widget.client!['subscription_plan']?.toString();
 
       if (widget.client!['subscription_acquired_at'] != null) {
@@ -269,9 +269,9 @@ class _ClientFormBottomSheetState extends ConsumerState<ClientFormBottomSheet> {
       };
 
       if (_isEditing) {
-        await supabase.from('clients').update(clientData).eq('id', widget.client!['id']);
+        await supabase.from('clients').update(clientData).eq('id', widget.client!['id'] as Object);
       } else {
-        clientData['unit_id'] = userRes['unit_id']; 
+        clientData['unit_id'] = userRes['unit_id'] as String?;
         await supabase.from('clients').insert(clientData);
       }
 
@@ -518,7 +518,7 @@ class _PlanChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.15) : Colors.grey[900],
+          color: selected ? color.withValues(alpha: 0.15) : Colors.grey[900],
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: selected ? color : Colors.transparent),
         ),

@@ -11,7 +11,7 @@ final unitServicesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) as
   final response = await supabase
       .from('services')
       .select('*')
-      .eq('unit_id', userRes['unit_id'])
+      .eq('unit_id', userRes['unit_id'] as Object)
       .eq('is_active', true) 
       .order('name');
 

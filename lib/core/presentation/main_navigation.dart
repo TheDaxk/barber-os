@@ -79,7 +79,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const MenuScreen()),
+                MaterialPageRoute<void>(builder: (context) => const MenuScreen()),
               );
             },
           ),
@@ -106,7 +106,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
   }
 
   void _showNotificationsDialog(BuildContext context) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
