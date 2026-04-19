@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
 import '../providers/appointments_provider.dart';
-import '../providers/order_items_provider.dart';
 import '../../clients/providers/clients_provider.dart'; // NOVO: Import do provedor de clientes
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
@@ -415,7 +414,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                           decoration: BoxDecoration(
                             color: isSelected ? Colors.green : isBooked ? Colors.grey[900] : Colors.grey[800],
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isSelected ? Colors.green : isBooked ? Colors.red.withOpacity(0.3) : Colors.transparent),
+                            border: Border.all(color: isSelected ? Colors.green : isBooked ? Colors.red.withValues(alpha: 0.3) : Colors.transparent),
                           ),
                           alignment: Alignment.center,
                           child: Text(slot, style: TextStyle(color: isSelected ? Colors.black : isBooked ? Colors.grey[600] : Colors.white, decoration: isBooked ? TextDecoration.lineThrough : null)),

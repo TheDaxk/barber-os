@@ -149,7 +149,7 @@ class _BusinessHoursScreenState extends ConsumerState<BusinessHoursScreen> {
                       _hours![index] = hour.copyWith(isOpen: value);
                     });
                   },
-                  activeColor: Colors.green,
+                  activeTrackColor: Colors.green,
                 ),
               ],
             ),

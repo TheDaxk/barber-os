@@ -111,7 +111,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundColor: const Color(0xFFD4AF37).withOpacity(0.15),
+                              backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                               child: Text(
                                 (user['name'] as String? ?? 'U')[0].toUpperCase(),
                                 style: const TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold, fontSize: 14),
@@ -128,7 +128,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.settings_outlined, size: 18, color: Colors.grey),
-                                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MenuScreen())),
+                                onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const MenuScreen())),
                               ),
                             ],
                           ],
@@ -159,10 +159,10 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
       duration: const Duration(milliseconds: 150),
       margin: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFD4AF37).withOpacity(0.12) : Colors.transparent,
+        color: isSelected ? const Color(0xFFD4AF37).withValues(alpha: 0.12) : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         border: isSelected
-            ? Border.all(color: const Color(0xFFD4AF37).withOpacity(0.3), width: 1)
+            ? Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3), width: 1)
             : null,
       ),
       child: ListTile(

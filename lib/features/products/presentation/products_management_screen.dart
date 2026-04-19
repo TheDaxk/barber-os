@@ -11,7 +11,6 @@ class ProductsManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScreen> {
-  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,14 +72,14 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
               final isLowStock = stock < 5;
 
               return Dismissible(
-                key: Key(product['id']),
+                key: Key(product['id'] as String),
                 direction: DismissDirection.endToStart,
                 background: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(Icons.delete, color: Colors.red),
@@ -91,7 +90,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                     builder: (context) => AlertDialog(
                       backgroundColor: Colors.grey[900],
                       title: const Text('Excluir Produto'),
-                      content: Text('Deseja realmente excluir "${product['name']}"?'),
+                      content: Text('Deseja realmente excluir "${product['name'] as String}"?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -109,15 +108,15 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                 onDismissed: (direction) async {
                   try {
                     final supabase = ref.read(supabaseProvider);
-                    await deleteProduct(supabase, product['id']);
+                    await deleteProduct(supabase, product['id'] as String);
                     ref.invalidate(productsProvider);
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('"${product['name']}" excluído!')),
+                        SnackBar(content: Text('"${product['name'] as String}" excluído!')),
                       );
                     }
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Erro ao excluir: $e'), backgroundColor: Colors.red),
                       );
@@ -129,7 +128,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: isLowStock ? Colors.orange.withOpacity(0.5) : Colors.white10),
+                    side: BorderSide(color: isLowStock ? Colors.orange.withValues(alpha: 0.5) : Colors.white10),
                   ),
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
@@ -137,7 +136,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isLowStock ? Colors.orange.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                        color: isLowStock ? Colors.orange.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -149,7 +148,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                       children: [
                         Expanded(
                           child: Text(
-                            product['name'],
+                            product['name'] as String,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),
@@ -157,7 +156,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.2),
+                              color: Colors.orange.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Text(
@@ -209,14 +208,12 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
         child: const Icon(Icons.add),
       ),
     );
-  }
-
-  void _showAddProductDialog() {
+  }  void _showAddProductDialog() {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final stockController = TextEditingController(text: '0');
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
@@ -277,7 +274,6 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                 return;
               }
 
-              setState(() => _isLoading = true);
               Navigator.pop(context);
 
               try {
@@ -287,7 +283,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
 
                 await addProduct(
                   supabase: supabase,
-                  unitId: userRes['unit_id'],
+                  unitId: userRes['unit_id'] as String,
                   name: name,
                   price: price,
                   stock: stock,
@@ -295,19 +291,17 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
 
                 ref.invalidate(productsProvider);
 
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('"$name" adicionado!'), backgroundColor: Colors.green),
                   );
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
                   );
                 }
-              } finally {
-                if (mounted) setState(() => _isLoading = false);
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -319,11 +313,11 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
   }
 
   void _showEditProductDialog(Map<String, dynamic> product) {
-    final nameController = TextEditingController(text: product['name']);
+    final nameController = TextEditingController(text: product['name'] as String?);
     final priceController = TextEditingController(text: (product['price'] as num).toString());
     final stockController = TextEditingController(text: (product['stock'] as int).toString());
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
@@ -384,7 +378,6 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                 return;
               }
 
-              setState(() => _isLoading = true);
               Navigator.pop(context);
 
               try {
@@ -392,7 +385,7 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
 
                 await updateProduct(
                   supabase: supabase,
-                  id: product['id'],
+                  id: product['id'] as String,
                   name: name,
                   price: price,
                   stock: stock,
@@ -400,19 +393,17 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
 
                 ref.invalidate(productsProvider);
 
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('"$name" atualizado!'), backgroundColor: Colors.green),
                   );
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
                   );
                 }
-              } finally {
-                if (mounted) setState(() => _isLoading = false);
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),

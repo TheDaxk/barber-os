@@ -113,7 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.3,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: [
@@ -177,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return ListTile(
           contentPadding: EdgeInsets.zero,
           leading: CircleAvatar(
-            backgroundColor: isClosed ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+            backgroundColor: isClosed ? Colors.green.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
             child: Icon(
               isClosed ? Icons.check : Icons.access_time,
               color: isClosed ? Colors.green : Colors.orange,
@@ -244,9 +244,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Top 3 Ganha cores
     Color circleColor = Colors.white10;
     Color textColor = Colors.white;
-    if (position == '1') { circleColor = Colors.amber.withOpacity(0.3); textColor = Colors.amber; }
-    if (position == '2') { circleColor = Colors.grey.withOpacity(0.5); textColor = Colors.grey[400]!; }
-    if (position == '3') { circleColor = Colors.brown.withOpacity(0.5); textColor = Colors.orangeAccent; }
+    if (position == '1') { circleColor = Colors.amber.withValues(alpha: 0.3); textColor = Colors.amber; }
+    if (position == '2') { circleColor = Colors.grey.withValues(alpha: 0.5); textColor = Colors.grey[400]!; }
+    if (position == '3') { circleColor = Colors.brown.withValues(alpha: 0.5); textColor = Colors.orangeAccent; }
 
     return ListTile(
       leading: CircleAvatar(
@@ -269,7 +269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const CreateAppointmentScreen()),
+            MaterialPageRoute<void>(builder: (context) => const CreateAppointmentScreen()),
           );
         },
       },
@@ -280,7 +280,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const WaitingListScreen()),
+            MaterialPageRoute<void>(builder: (context) => const WaitingListScreen()),
           );
         },
       },
@@ -291,7 +291,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         'onTap': () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const QuickReportScreen()),
+            MaterialPageRoute<void>(builder: (context) => const QuickReportScreen()),
           );
         },
       },
@@ -385,8 +385,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
                     backgroundColor: waitingCount > 0
-                        ? Colors.orange.withOpacity(0.2)
-                        : Colors.green.withOpacity(0.2),
+                        ? Colors.orange.withValues(alpha: 0.2)
+                        : Colors.green.withValues(alpha: 0.2),
                     child: Icon(
                       waitingCount > 0 ? Icons.access_time : Icons.check,
                       color: waitingCount > 0 ? Colors.orange : Colors.green,
@@ -418,7 +418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blue.withOpacity(0.2),
+                    backgroundColor: Colors.blue.withValues(alpha: 0.2),
                     child: Icon(
                       Icons.people_outline,
                       color: Colors.blue,
@@ -450,7 +450,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
-                    backgroundColor: Colors.purple.withOpacity(0.2),
+                    backgroundColor: Colors.purple.withValues(alpha: 0.2),
                     child: Icon(
                       Icons.schedule_outlined,
                       color: Colors.purple,
@@ -489,7 +489,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return unitsAsync.when(
       loading: () => const Text('Carregando...', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      error: (_, __) => const Text('Erro ao carregar unidades'),
+      error: (err, stack) => const Text('Erro ao carregar unidades'),
       data: (units) {
         final selectedUnit = units.firstWhere(
           (u) => u['id'] == selectedUnitId,
@@ -516,7 +516,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showUnitPicker(List<Map<String, dynamic>> units) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.grey[900],
       shape: const RoundedRectangleBorder(

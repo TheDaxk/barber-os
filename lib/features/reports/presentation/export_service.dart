@@ -297,7 +297,9 @@ class ExportService {
       
       // Filtro de data
       if (dt.isBefore(range.start.subtract(const Duration(seconds: 1))) ||
-          dt.isAfter(range.end.add(const Duration(days: 1)))) continue;
+          dt.isAfter(range.end.add(const Duration(days: 1)))) {
+        continue;
+      }
 
       revenueSheet.appendRow([
         TextCellValue('${dt.day.toString().padLeft(2,'0')}/${dt.month.toString().padLeft(2,'0')}/${dt.year}'),

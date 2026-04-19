@@ -40,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         // Descomente e adicione esta navegação:
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
+          MaterialPageRoute<void>(builder: (_) => const MainNavigation()),
         );
       }
     } on AuthException catch (e) {
@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                        MaterialPageRoute<void>(builder: (context) => const ForgotPasswordScreen()),
                       );
                     },
                     child: const Text('Esqueci minha senha'),

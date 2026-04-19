@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
 import 'financial_provider.dart';
+import '../../units/providers/units_provider.dart';
+import '../../../core/providers/selected_unit_provider.dart';
 import 'export_service.dart';
 
 class FinancialScreen extends ConsumerStatefulWidget {
@@ -17,6 +19,8 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
+  String? _selectedExpenseCategory; // null = sem filtro (exibe todas)
+
   static const List<Map<String, dynamic>> _expenseCategories = [
     {'id': 'Aluguel', 'label': 'Aluguel', 'icon': Icons.home_outlined, 'color': 0xFFFF7043},
     {'id': 'Produtos', 'label': 'Produtos', 'icon': Icons.shopping_bag_outlined, 'color': 0xFF42A5F5},
@@ -30,7 +34,7 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
   ];
 
   void _showExpenseBottomSheet({Map<String, dynamic>? expense}) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -122,7 +126,7 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                             ],
                           ),
                           selected: isSelected,
-                          selectedColor: catColor.withOpacity(0.8),
+                          selectedColor: catColor.withValues(alpha: 0.8),
                           backgroundColor: Colors.grey[800],
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: isSelected ? catColor : Colors.transparent)),
                           showCheckmark: false,
@@ -248,6 +252,16 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
     ref.invalidate(monthlyExpensesProvider);
   }
 
+  String _paymentLabel(String? method) {
+    switch (method) {
+      case 'pix': return 'Pix';
+      case 'credit_card': return 'Cartão de Crédito';
+      case 'debit_card': return 'Cartão de Débito';
+      case 'cash': return 'Dinheiro';
+      default: return method ?? 'Não informado';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedMonthProvider);
@@ -277,10 +291,22 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
     double ticketMedio = totalAtendimentos > 0 ? (faturamento / totalAtendimentos) : 0.0;
 
     final monthLabel = '${_monthNames[selectedDate.month]} ${selectedDate.year}';
+    final selectedUnit = ref.watch(selectedUnitIdProvider);
+    final profileAsync = ref.watch(userProfileProvider);
+    
+    String? effectiveUnitId;
+    if (selectedUnit != null) {
+      effectiveUnitId = selectedUnit;
+    } else {
+      effectiveUnitId = profileAsync.value?['unit_id'] as String?;
+    }
+
+    final unitAsync = effectiveUnitId != null ? ref.watch(unitDetailProvider(effectiveUnitId)) : null;
+    final unitName = unitAsync?.value?['name'] as String? ?? 'Financeiro';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Financeiro', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Financeiro - $unitName', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -295,10 +321,13 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
         color: Colors.white,
         backgroundColor: Colors.grey[900],
         onRefresh: _refreshData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
@@ -337,28 +366,114 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                 ? const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
                 : _buildMainCard(lucroEstimado),
               const SizedBox(height: 24),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.8,
-                children: [
-                  _buildSmallCard('Faturamento', faturamento, Colors.greenAccent),
-                  _buildSmallCard('Comissões (40%)', comissoes, Colors.orangeAccent),
-                  _buildSmallCard('Despesas', despesas, Colors.redAccent),
-                  _buildSmallCard('Ticket Médio', ticketMedio, Colors.blueAccent),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth > 700;
+                  return GridView.count(
+                    crossAxisCount: isDesktop ? 4 : 1,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: isDesktop ? 1.8 : 3.8, // 3.8 no mobile deixa o card bem fino
+                    children: [
+                      _buildKpiCard(
+                        title: 'Faturamento',
+                        value: faturamento,
+                        icon: Icons.trending_up_rounded,
+                        accentColor: Colors.greenAccent,
+                      ),
+                      _buildKpiCard(
+                        title: 'Comissões (40%)',
+                        value: comissoes,
+                        icon: Icons.handshake_outlined,
+                        accentColor: Colors.orangeAccent,
+                      ),
+                      _buildKpiCard(
+                        title: 'Despesas',
+                        value: despesas,
+                        icon: Icons.receipt_long_outlined,
+                        accentColor: Colors.redAccent,
+                      ),
+                      _buildKpiCard(
+                        title: 'Ticket Médio',
+                        value: ticketMedio,
+                        icon: Icons.confirmation_number_outlined,
+                        accentColor: Colors.blueAccent,
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 32),
-              const Text('Despesas do Mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Despesas do Mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  if (_selectedExpenseCategory != null)
+                    TextButton(
+                      onPressed: () => setState(() => _selectedExpenseCategory = null),
+                      child: const Text('Limpar filtro', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _expenseCategories.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final cat = _expenseCategories[index];
+                    final isSelected = _selectedExpenseCategory == cat['id'];
+                    final catColor = Color(cat['color'] as int);
+                    return GestureDetector(
+                      onTap: () => setState(() {
+                        _selectedExpenseCategory = isSelected ? null : cat['id'] as String;
+                      }),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? catColor.withValues(alpha: 0.2) : Colors.grey[900],
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? catColor : Colors.white12,
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(cat['icon'] as IconData, size: 13, color: isSelected ? catColor : Colors.grey),
+                            const SizedBox(width: 5),
+                            Text(
+                              cat['label'] as String,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected ? catColor : Colors.grey[400],
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
               const SizedBox(height: 12),
               expensesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Text('Erro: $err', style: const TextStyle(color: Colors.red)),
                 data: (expenses) {
-                  if (expenses.isEmpty) {
+                  // Aplicar filtro por categoria se selecionado
+                  final filteredExpenses = _selectedExpenseCategory == null
+                      ? expenses
+                      : expenses.where((e) => e['category']?.toString() == _selectedExpenseCategory).toList();
+
+                  if (filteredExpenses.isEmpty) {
                     return Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -379,10 +494,10 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                     child: ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: expenses.length,
+                      itemCount: filteredExpenses.length,
                       separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.white10, indent: 16, endIndent: 16),
                       itemBuilder: (context, index) {
-                        final exp = expenses[index];
+                        final exp = filteredExpenses[index];
                         final amountStr = (exp['amount'] as num).toStringAsFixed(2);
                         final dateParts = exp['expense_date'].toString().split('-');
                         final dateStr = '${dateParts[2]}/${dateParts[1]}';
@@ -395,7 +510,7 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                           leading: Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: catColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                            decoration: BoxDecoration(color: catColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                             child: Icon(catInfo['icon'] as IconData, color: catColor, size: 20),
                           ),
                           title: Text(exp['description']?.toString() ?? catId, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -414,11 +529,135 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                   );
                 }
               ),
+              // ---- SEÇÃO DE RECEITAS ----
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Receitas do Mês', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  if (revenueAsync.hasValue)
+                    Text(
+                      '${revenueAsync.value!.length} atendimento(s)',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              revenueAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Text('Erro: $err', style: const TextStyle(color: Colors.red)),
+                data: (orders) {
+                  if (orders.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[900],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: const Text(
+                        'Nenhum atendimento registrado neste mês.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
+                  }
+
+                  // Ordenar do mais recente para o mais antigo
+                  final sortedOrders = [...orders]..sort((a, b) {
+                    final dateA = DateTime.tryParse(a['closed_at']?.toString() ?? '') ?? DateTime(2000);
+                    final dateB = DateTime.tryParse(b['closed_at']?.toString() ?? '') ?? DateTime(2000);
+                    return dateB.compareTo(dateA);
+                  });
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[900],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: sortedOrders.length,
+                      separatorBuilder: (context, index) => const Divider(
+                        height: 1,
+                        color: Colors.white10,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                      itemBuilder: (context, index) {
+                        final order = sortedOrders[index];
+
+                        final total = (order['total'] as num?)?.toDouble() ?? 0.0;
+                        final clientName = order['client_name']?.toString() ?? 'Cliente';
+                        final paymentMethod = _paymentLabel(order['payment_method']?.toString());
+                        final barberName = (order['barbers']?['users']?['name'] as String?) ?? 'Não informado';
+
+                        String dateStr = '';
+                        if (order['closed_at'] != null) {
+                          final dt = DateTime.tryParse(order['closed_at'].toString())?.toLocal();
+                          if (dt != null) {
+                            dateStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+                          }
+                        }
+
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          leading: Container(
+                            padding: const EdgeInsets.all(9),
+                            decoration: BoxDecoration(
+                              color: Colors.greenAccent.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.attach_money, color: Colors.greenAccent, size: 20),
+                          ),
+                          title: Text(
+                            clientName,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 2),
+                              Text(
+                                '✂️ $barberName',
+                                style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                '$paymentMethod • $dateStr',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                              ),
+                            ],
+                          ),
+                          isThreeLine: true,
+                          trailing: Text(
+                            'R\$ ${total.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              color: Colors.greenAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+              // ---- FIM DA SEÇÃO DE RECEITAS ----
               const SizedBox(height: 80),
             ],
           ),
         ),
       ),
+    ),
+  ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showExpenseBottomSheet(),
         backgroundColor: Colors.white,
@@ -438,7 +677,7 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
         color: Colors.grey[900],
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isPositive ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3), 
+          color: isPositive ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3), 
           width: 1.5
         ),
       ),
@@ -463,29 +702,81 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
     );
   }
 
-  Widget _buildSmallCard(String title, double amount, Color accentColor) {
+  Widget _buildKpiCard({
+    required String title,
+    required double value,
+    required IconData icon,
+    required Color accentColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[900], 
+        color: Colors.grey[900],
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white10),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          Text(title, style: TextStyle(color: Colors.grey[400], fontSize: 12, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 8),
-          Text(
-            'R\$ ${amount.toStringAsFixed(2)}',
-            style: TextStyle(color: accentColor, fontSize: 16, fontWeight: FontWeight.bold),
-            maxLines: 1, overflow: TextOverflow.ellipsis
+          // Barra de accent lateral
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          // Conteúdo
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 14, color: accentColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'R\$ ${value.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: accentColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
 
   void _showExportBottomSheet(BuildContext context) {
     String selectedFormat = 'pdf'; 
@@ -493,7 +784,7 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
     bool detailed = false;
     DateTimeRange? customRange;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

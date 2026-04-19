@@ -1,0 +1,110 @@
+﻿Analyzing lib...                                                
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\presentation\desktop_shell.dart:114:72 - deprecated_member_use
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\core\presentation\desktop_shell.dart:131:74 - inference_failure_on_instance_creation
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\presentation\desktop_shell.dart:162:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\presentation\desktop_shell.dart:165:57 - deprecated_member_use
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\core\presentation\main_navigation.dart:82:17 - inference_failure_on_instance_creation
+warning - The type argument(s) of the function 'showDialog' can't be inferred - lib\core\presentation\main_navigation.dart:109:5 - inference_failure_on_function_invocation
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\core\theme\app_theme.dart:84:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\auth\presentation\forgot_password_screen.dart:154:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\auth\presentation\forgot_password_screen.dart:156:58 - deprecated_member_use
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\auth\presentation\login_screen.dart:43:11 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\auth\presentation\login_screen.dart:144:25 - inference_failure_on_instance_creation
+warning - The type argument(s) of the function 'showModalBottomSheet' can't be inferred - lib\features\clients\clients_screen.dart:24:5 - inference_failure_on_function_invocation
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:109:75 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:109:116 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:109:148 - deprecated_member_use
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\clients\clients_screen.dart:114:56 - argument_type_not_assignable
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\clients\clients_screen.dart:128:40 - argument_type_not_assignable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:134:73 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:134:104 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:136:92 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:136:123 - deprecated_member_use
+  error - A value of type 'dynamic' can't be assigned to a variable of type 'String' - lib\features\clients\clients_screen.dart:199:30 - invalid_assignment
+  error - A value of type 'dynamic' can't be assigned to a variable of type 'String' - lib\features\clients\clients_screen.dart:200:31 - invalid_assignment
+  error - A value of type 'dynamic' can't be assigned to a variable of type 'String' - lib\features\clients\clients_screen.dart:201:31 - invalid_assignment
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'Object'.  - lib\features\clients\clients_screen.dart:272:68 - argument_type_not_assignable
+  error - A value of type 'dynamic' can't be assigned to a variable of type 'String?' - lib\features\clients\clients_screen.dart:274:33 - invalid_assignment
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\clients\clients_screen.dart:521:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:180:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:180:87 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:247:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:248:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:249:55 - deprecated_member_use
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\dashboard\presentation\home_screen.dart:272:13 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\dashboard\presentation\home_screen.dart:283:13 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\dashboard\presentation\home_screen.dart:294:13 - inference_failure_on_instance_creation
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:388:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:389:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:421:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\home_screen.dart:453:52 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\dashboard\presentation\home_screen.dart:492:18 - unnecessary_underscores
+warning - The type argument(s) of the function 'showModalBottomSheet' can't be inferred - lib\features\dashboard\presentation\home_screen.dart:519:5 - inference_failure_on_function_invocation
+   info - Unnecessary use of multiple underscores - lib\features\dashboard\presentation\leader_overview_screen.dart:36:28 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\leader_overview_screen.dart:142:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\leader_overview_screen.dart:142:98 - deprecated_member_use
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\dashboard\presentation\leader_overview_screen.dart:149:30 - argument_type_not_assignable
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\dashboard\presentation\leader_overview_screen.dart:150:30 - argument_type_not_assignable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\leader_overview_screen.dart:188:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\leader_overview_screen.dart:251:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\dashboard\presentation\leader_overview_screen.dart:252:28 - deprecated_member_use
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'Object'.  - lib\features\dashboard\providers\dashboard_provider.dart:38:35 - argument_type_not_assignable
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\orders\presentation\checkout_screen.dart:209:39 - argument_type_not_assignable
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'Object'.  - lib\features\orders\presentation\checkout_screen.dart:252:19 - argument_type_not_assignable
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\orders\presentation\checkout_screen.dart:294:24 - argument_type_not_assignable
+  error - The argument type 'dynamic' can't be assigned to the parameter type 'String'.  - lib\features\orders\presentation\checkout_screen.dart:349:45 - argument_type_not_assignable
+warning - Unused import: '../providers/order_items_provider.dart' - lib\features\orders\presentation\create_appointment_screen.dart:5:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\orders\presentation\create_appointment_screen.dart:418:105 - deprecated_member_use
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\orders\presentation\schedule_agenda_screen.dart:104:35 - inference_failure_on_instance_creation
+warning - The type argument(s) of the function 'showModalBottomSheet' can't be inferred - lib\features\orders\presentation\schedule_agenda_screen.dart:182:5 - inference_failure_on_function_invocation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\orders\presentation\schedule_agenda_screen.dart:202:23 - inference_failure_on_instance_creation
+warning - The type argument(s) of the function 'showDialog' can't be inferred - lib\features\orders\presentation\schedule_agenda_screen.dart:236:5 - inference_failure_on_function_invocation
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\orders\presentation\schedule_agenda_screen.dart:254:23 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\features\orders\presentation\schedule_agenda_screen.dart:257:23 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\orders\presentation\waiting_list_screen.dart:37:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\orders\presentation\waiting_list_screen.dart:74:52 - deprecated_member_use
+warning - The value of the field '_isLoading' isn't used - lib\features\products\presentation\products_management_screen.dart:14:8 - unused_field
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\products\presentation\products_management_screen.dart:115:44 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\products\presentation\products_management_screen.dart:121:44 - use_build_context_synchronously
+warning - The type argument(s) of the function 'showDialog' can't be inferred - lib\features\products\presentation\products_management_screen.dart:219:5 - inference_failure_on_function_invocation
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\products\presentation\products_management_screen.dart:299:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\products\presentation\products_management_screen.dart:305:40 - use_build_context_synchronously
+warning - The type argument(s) of the function 'showDialog' can't be inferred - lib\features\products\presentation\products_management_screen.dart:326:5 - inference_failure_on_function_invocation
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\products\presentation\products_management_screen.dart:404:40 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\products\presentation\products_management_screen.dart:410:40 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block - lib\features\reports\presentation\export_service.dart:300:63 - curly_braces_in_flow_control_structures
+warning - The type argument(s) of the function 'showModalBottomSheet' can't be inferred - lib\features\reports\presentation\financial_screen.dart:37:5 - inference_failure_on_function_invocation
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\financial_screen.dart:129:51 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\reports\presentation\financial_screen.dart:426:41 - unnecessary_underscores
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\financial_screen.dart:439:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\financial_screen.dart:513:71 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\financial_screen.dart:611:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\financial_screen.dart:680:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\financial_screen.dart:680:74 - deprecated_member_use
+warning - The declaration '_buildSmallCard' isn't referenced - lib\features\reports\presentation\financial_screen.dart:780:10 - unused_element
+warning - The type argument(s) of the function 'showModalBottomSheet' can't be inferred - lib\features\reports\presentation\financial_screen.dart:810:5 - inference_failure_on_function_invocation
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\quick_report_screen.dart:299:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\quick_report_screen.dart:302:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\reports\presentation\quick_report_screen.dart:305:40 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\features\services\create_service_screen.dart:113:28 - use_build_context_synchronously
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\settings\menu_screen.dart:83:27 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\settings\menu_screen.dart:107:45 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\settings\menu_screen.dart:117:45 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\settings\menu_screen.dart:132:45 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\settings\menu_screen.dart:147:45 - inference_failure_on_instance_creation
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\settings\menu_screen.dart:164:25 - inference_failure_on_instance_creation
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\settings\unit_settings_screen.dart:260:19 - deprecated_member_use
+warning - Unused import: '../providers/employees_provider.dart' - lib\features\team\presentation\employee_details_screen.dart:3:8 - unused_import
+warning - Unnecessary cast - lib\features\team\presentation\employee_details_screen.dart:285:19 - unnecessary_cast
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\team\presentation\employee_details_screen.dart:304:17 - deprecated_member_use
+warning - Dead code - lib\features\team\presentation\employee_details_screen.dart:330:21 - dead_code
+   info - The imported package 'http' isn't a dependency of the importing package - lib\features\team\presentation\employees_screen.dart:3:8 - depend_on_referenced_packages
+warning - The type argument(s) of the function 'showModalBottomSheet' can't be inferred - lib\features\team\presentation\employees_screen.dart:46:5 - inference_failure_on_function_invocation
+   info - Unnecessary use of multiple underscores - lib\features\team\presentation\employees_screen.dart:101:38 - unnecessary_underscores
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\team\presentation\employees_screen.dart:103:29 - deprecated_member_use
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\team\presentation\employees_screen.dart:388:23 - inference_failure_on_instance_creation
+   info - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre - lib\features\units\presentation\business_hours_screen.dart:152:19 - deprecated_member_use
+   info - Unnecessary use of multiple underscores - lib\features\units\presentation\unit_detail_screen.dart:28:24 - unnecessary_underscores
+warning - The type argument(s) of the constructor 'MaterialPageRoute' can't be inferred - lib\features\units\presentation\unit_detail_screen.dart:154:27 - inference_failure_on_instance_creation
+

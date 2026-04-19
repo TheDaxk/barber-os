@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:barber_os/features/auth/presentation/login_screen.dart';
-import 'package:barber_os/core/presentation/main_navigation.dart';
 import 'package:barber_os/core/theme/app_theme.dart';
 
 const supabaseUrl = 'https://akqvqyiyhyuzrnvpvfxt.supabase.co';

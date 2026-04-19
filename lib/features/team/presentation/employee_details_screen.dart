@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/employees_provider.dart';
 import '../providers/barber_metrics_provider.dart';
 import '../../units/providers/units_provider.dart';
 import '../../../core/supabase/providers.dart';
@@ -17,15 +16,15 @@ class EmployeeDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userName = employee['users']?['name'] ?? 'Sem Nome';
-    final userEmail = employee['users']?['email'] ?? 'Sem E-mail';
-    final userPhone = employee['users']?['phone'] ?? 'Sem Telefone';
-    final unitName = employee['unit_name'] ?? 'Sem Unidade';
-    final category = employee['category'] ?? 'Barbeiro';
+    final String userName = employee['users']?['name']?.toString() ?? 'Sem Nome';
+    final String userEmail = employee['users']?['email']?.toString() ?? 'Sem E-mail';
+    final String userPhone = employee['users']?['phone']?.toString() ?? 'Sem Telefone';
+    final String unitName = employee['unit_name']?.toString() ?? 'Sem Unidade';
+    final String category = employee['category']?.toString() ?? 'Barbeiro';
     final commission = employee['commission_rate'] ?? 40;
     
     // Obter as métricas
-    final metricsAsync = ref.watch(barberMetricsProvider(employee['id']));
+    final metricsAsync = ref.watch(barberMetricsProvider(employee['id'] as String));
 
     // Decorar a categoria
     IconData catIcon = Icons.content_cut;
@@ -60,7 +59,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
                // Header de Perfil
               CircleAvatar(
                 radius: 48,
-                backgroundColor: Colors.blueAccent.withOpacity(0.15),
+                backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
                 child: Icon(catIcon, color: Colors.blueAccent, size: 48),
               ),
               const SizedBox(height: 16),
@@ -101,7 +100,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
                     child: Text('$commission% COMISSÃO', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
                   ),
                 ],
@@ -123,7 +122,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
                 ),
                 error: (err, stack) => Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                   child: Text('Erro ao carregar métricas: $err', style: const TextStyle(color: Colors.redAccent)),
                 ),
                 data: (metrics) {
@@ -239,7 +238,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: medalColor.withOpacity(0.2),
+                        color: medalColor.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -256,7 +255,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        name,
+                        name as String,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
@@ -282,7 +281,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
 
   Future<void> _showTransferDialog(BuildContext context, WidgetRef ref) async {
     final unitsAsync = await ref.read(unitsProvider.future);
-    final units = unitsAsync as List<Map<String, dynamic>>;
+    final units = unitsAsync;
 
     if (!context.mounted) return;
 
@@ -301,7 +300,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
               const Text('Selecione a nova unidade:', style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedUnitId,
+                initialValue: selectedUnitId,
                 dropdownColor: Colors.grey[800],
                 decoration: InputDecoration(
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -330,10 +329,13 @@ class EmployeeDetailsScreen extends ConsumerWidget {
                   ? null
                   : () async {
                       if (selectedUnitId == null) return;
+                      setState(() => isLoading = true);
                       Navigator.pop(context, selectedUnitId);
                     },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: const Text('Transferir'),
+              child: isLoading 
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Transferir'),
             ),
           ],
         ),
@@ -360,7 +362,7 @@ class EmployeeDetailsScreen extends ConsumerWidget {
       await supabase
           .from('barbers')
           .update({'unit_id': result})
-          .eq('id', employee['id']);
+          .eq('id', employee['id'] as Object);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

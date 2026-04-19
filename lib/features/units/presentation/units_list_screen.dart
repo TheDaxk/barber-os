@@ -19,17 +19,6 @@ class UnitsListScreen extends ConsumerWidget {
         title: const Text('Unidades', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const UnitFormScreen()),
-              );
-            },
-          ),
-        ],
       ),
       body: userProfileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -73,7 +62,7 @@ class UnitsListScreen extends ConsumerWidget {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const UnitFormScreen()),
+                            MaterialPageRoute<void>(builder: (context) => const UnitFormScreen()),
                           );
                         },
                         icon: const Icon(Icons.add),
@@ -85,18 +74,30 @@ class UnitsListScreen extends ConsumerWidget {
                 );
               }
 
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: units.length,
-                itemBuilder: (context, index) {
-                  final unit = units[index];
-                  return _UnitCard(unit: Map<String, dynamic>.from(unit));
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth > 600;
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: isDesktop
+                        ? const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 350,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 1.15,
+                          )
+                        : const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 1,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 2.2,
+                          ),
+                    itemCount: units.length,
+                    itemBuilder: (context, index) {
+                      final unit = units[index];
+                      return _UnitCard(unit: Map<String, dynamic>.from(unit));
+                    },
+                  );
                 },
               );
             },
@@ -107,7 +108,7 @@ class UnitsListScreen extends ConsumerWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const UnitFormScreen()),
+            MaterialPageRoute<void>(builder: (context) => const UnitFormScreen()),
           );
         },
         backgroundColor: Colors.white,
@@ -131,7 +132,7 @@ class _UnitCard extends ConsumerWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => UnitDetailScreen(unitId: unit['id'] as String)),
+          MaterialPageRoute<void>(builder: (context) => UnitDetailScreen(unitId: unit['id'] as String)),
         );
       },
       child: Card(
@@ -148,12 +149,12 @@ class _UnitCard extends ConsumerWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
+                      color: Colors.green.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.business, color: Colors.green, size: 20),
+                    child: const Icon(Icons.business, color: Colors.green, size: 18),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -198,7 +199,7 @@ class _UnitCard extends ConsumerWidget {
               const Spacer(),
               barbersAsync.when(
                 loading: () => const Text('...', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                error: (_, __) => const Text('Sem responsável', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                error: (_, _) => const Text('Sem responsável', style: TextStyle(color: Colors.grey, fontSize: 11)),
                 data: (barbers) {
                   if (barbers.isEmpty) {
                     return const Text('Sem responsável', style: TextStyle(color: Colors.grey, fontSize: 11));

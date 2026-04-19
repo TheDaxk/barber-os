@@ -29,9 +29,9 @@ class MenuScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro ao carregar perfil: $err', style: const TextStyle(color: Colors.red))),
         data: (user) {
-          final name = user['name'] ?? 'Usuário';
-          final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
-          final category = user['category'] ?? 'Gestor';
+          final String name = user['name']?.toString() ?? 'Usuário';
+          final String initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+          final String category = user['category']?.toString() ?? 'Gestor';
           final isLeader = category == 'Barbeiro Líder' || user['role'] == 'admin';
           
           return ListView(
@@ -51,7 +51,7 @@ class MenuScreen extends ConsumerWidget {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                      backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
                       child: Text(
                         initial,
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent),
@@ -80,7 +80,7 @@ class MenuScreen extends ConsumerWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          MaterialPageRoute<void>(
                             builder: (context) => EditProfileScreen(userProfile: user),
                           ),
                         );
@@ -104,7 +104,7 @@ class MenuScreen extends ConsumerWidget {
                   title: 'Serviços e Combos',
                   subtitle: 'Cadastre novos cortes, barbas e pacotes',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateServiceScreen()));
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const CreateServiceScreen()));
                   },
                 ),
                 const SizedBox(height: 8),
@@ -114,7 +114,7 @@ class MenuScreen extends ConsumerWidget {
                   title: 'Gestão de Produtos',
                   subtitle: 'Cadastre e gerencie produtos',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ProductsManagementScreen()));
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const ProductsManagementScreen()));
                   },
                 ),
 
@@ -129,7 +129,7 @@ class MenuScreen extends ConsumerWidget {
                   title: 'Profissionais',
                   subtitle: 'Gerencie os barbeiros e comissões',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const EmployeesScreen()));
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const EmployeesScreen()));
                   },
                 ),
 
@@ -144,7 +144,7 @@ class MenuScreen extends ConsumerWidget {
                   title: 'Horário de Funcionamento',
                   subtitle: 'Defina os horários de abertura e fechamento',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const UnitSettingsScreen()));
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const UnitSettingsScreen()));
                   },
                 ),
               ],
@@ -161,7 +161,7 @@ class MenuScreen extends ConsumerWidget {
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        MaterialPageRoute<void>(builder: (context) => const LoginScreen()),
                         (route) => false,
                       );
                     }

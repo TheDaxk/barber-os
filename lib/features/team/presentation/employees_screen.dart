@@ -23,17 +23,17 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
     final isEditing = employee != null;
     
     // Controladores (alguns só usados na criação)
-    final nameController = TextEditingController(text: isEditing ? (employee['users']?['name'] ?? '') : '');
-    final emailController = TextEditingController(text: isEditing ? (employee['users']?['email'] ?? '') : '');
-    final phoneController = TextEditingController(text: isEditing ? (employee['users']?['phone'] ?? '') : '');
-    final unitController = TextEditingController(text: isEditing ? ((employee['unit_name'] ?? '')) : '');
+    final nameController = TextEditingController(text: isEditing ? (employee['users']?['name'] as String? ?? '') : '');
+    final emailController = TextEditingController(text: isEditing ? (employee['users']?['email'] as String? ?? '') : '');
+    final phoneController = TextEditingController(text: isEditing ? (employee['users']?['phone'] as String? ?? '') : '');
+    final unitController = TextEditingController(text: isEditing ? ((employee['unit_name'] as String? ?? '')) : '');
     final passwordController = TextEditingController();
     
     final commissionController = TextEditingController(
       text: isEditing ? (employee['commission_rate'] as num).toStringAsFixed(0) : '40',
     );
     
-    String selectedCategory = isEditing ? (employee['category'] ?? 'Barbeiro') : 'Barbeiro';
+    String selectedCategory = isEditing ? (employee['category'] as String? ?? 'Barbeiro') : 'Barbeiro';
     bool isSaving = false;
 
     final categories = [
@@ -43,7 +43,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
       {'id': 'Barbeiro', 'label': 'Barbeiro', 'icon': Icons.content_cut},
     ];
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -98,9 +98,9 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                         final unitsAsync = ref.watch(unitsProvider);
                         return unitsAsync.when(
                           loading: () => const LinearProgressIndicator(),
-                          error: (_, __) => const Text('Erro ao carregar unidades', style: TextStyle(color: Colors.red)),
+                          error: (err, stack) => const Text('Erro ao carregar unidades', style: TextStyle(color: Colors.red)),
                           data: (units) => DropdownButtonFormField<String>(
-                            value: selectedUnitIdForEdit,
+                            initialValue: selectedUnitIdForEdit,
                             decoration: _inputDecoration('Unidade', Icons.location_on_outlined),
                             dropdownColor: Colors.grey[800],
                             hint: const Text('Selecione a unidade'),
@@ -179,7 +179,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
 
                                 setStateSheet(() => isSaving = true);
                                 try {
-                                  await ref.read(supabaseProvider).from('barbers').update({'is_active': false}).eq('id', employee['id']);
+                                  await ref.read(supabaseProvider).from('barbers').update({'is_active': false}).eq('id', employee['id'] as Object);
                                   ref.invalidate(employeesProvider);
                                   ref.invalidate(barbersProvider);
                                   if (context.mounted) Navigator.pop(context); // Fecha bottomsheet
@@ -222,12 +222,12 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                                     'category': selectedCategory,
                                     'commission_rate': commission,
                                     'unit_id': selectedUnitIdForEdit,
-                                  }).eq('id', employee['id']);
+                                  }).eq('id', employee['id'] as Object);
 
                                   // Tentar atualizar telefone no users (Pode falhar se RLS bloquear update no auth, mas como é via banco, funciona se admin tiver acesso)
                                   await supabase.from('users').update({
                                     'phone': phoneController.text.trim(),
-                                  }).eq('id', employee['user_id']);
+                                  }).eq('id', employee['user_id'] as Object);
                                   
                                   ref.invalidate(employeesProvider);
                                   ref.invalidate(barbersProvider);
@@ -357,7 +357,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               itemCount: employees.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return const Padding(
@@ -375,17 +375,17 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                   tileColor: Colors.grey[900],
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blueAccent.withOpacity(0.15),
+                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
                     child: const Icon(Icons.content_cut, color: Colors.blueAccent, size: 20),
                   ),
-                  title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(userName as String, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('$category • $commission% comissão', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                   trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
                   onTap: () {
                     // Vai para a TELA DE DETALHES em vez do BottomSheet de edição
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<void>(
                         builder: (context) => EmployeeDetailsScreen(
                           employee: emp,
                           onEdit: () {
@@ -418,7 +418,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
 
     return unitsAsync.when(
       loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => const Icon(Icons.business, color: Colors.grey),
+      error: (_, _) => const Icon(Icons.business, color: Colors.grey),
       data: (units) {
         return PopupMenuButton<String?>(
           icon: const Icon(Icons.business, color: Colors.white),
