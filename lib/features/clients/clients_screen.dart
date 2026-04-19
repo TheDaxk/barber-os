@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/supabase/providers.dart';
 import 'providers/clients_provider.dart';
+import 'presentation/client_detail_screen.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -103,6 +104,10 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                             final isPremium = subscriptionPlan == 'premium';
                             final isBasic = subscriptionPlan == 'basic';
 
+                            // Extrai o nome do barbeiro que cadastrou (pode ser null se campo não existir ainda)
+                            final createdByBarber = client['created_by_barber'];
+                            final createdByName = createdByBarber?['users']?['name']?.toString();
+
                             return ListTile(
                               contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
                               leading: CircleAvatar(
@@ -125,7 +130,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text(phone as String),
+                                  // Só exibe telefone se for Barbeiro Líder ou admin
+                                  if (isLeader)
+                                    Text(phone as String)
+                                  else
+                                    Text(
+                                      '••••••••••',
+                                      style: TextStyle(color: Colors.grey[600], letterSpacing: 2),
+                                    ),
                                   if (subscriptionPlan != null) ...[
                                     const SizedBox(height: 4),
                                     Container(
@@ -140,12 +152,41 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                         style: TextStyle(color: isPremium ? Colors.amber : Colors.blue, fontSize: 10, fontWeight: FontWeight.bold),
                                       ),
                                     ),
+                                  ],
+                                  if (createdByName != null && createdByName.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.person_pin_outlined, size: 12, color: Colors.grey[500]),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Cadastrado por $createdByName',
+                                          style: TextStyle(
+                                            color: Colors.grey[500],
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ]
                                 ],
                               ),
-                              // Só mostra icone de edição e perite toque se for o Leader
-                              trailing: isLeader ? const Icon(Icons.edit_outlined, color: Colors.grey, size: 20) : null,
-                              onTap: isLeader ? () => _showClientBottomSheet(client: client) : null,
+                              // Só mostra icone de edição e permite toque se for o Leader
+                              trailing: isLeader
+                                  ? const Icon(Icons.edit_outlined, color: Colors.grey, size: 20)
+                                  : const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                              onTap: () {
+                                if (isLeader) {
+                                  _showClientBottomSheet(client: client);
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ClientDetailScreen(client: client),
+                                    ),
+                                  );
+                                }
+                              },
                             );
                           },
                         ),

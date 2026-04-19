@@ -2,18 +2,120 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart'; // Import do Supabase
 import '../providers/appointments_provider.dart';
+import '../providers/schedule_lock_provider.dart';
 import 'create_appointment_screen.dart';
 import 'checkout_screen.dart';
 
-class ScheduleAgendaScreen extends ConsumerWidget {
+class ScheduleAgendaScreen extends ConsumerStatefulWidget {
   const ScheduleAgendaScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScheduleAgendaScreen> createState() =>
+      _ScheduleAgendaScreenState();
+}
+
+class _ScheduleAgendaScreenState extends ConsumerState<ScheduleAgendaScreen> {
+  bool _isTogglingLock = false;
+
+  Future<void> _handleToggleLock({
+    required bool currentLockState,
+    required String barberId,
+  }) async {
+    if (_isTogglingLock) return;
+    setState(() => _isTogglingLock = true);
+
+    final supabase = ref.read(supabaseProvider);
+
+    try {
+      await supabase
+          .from('barbers')
+          .update({'is_schedule_locked': !currentLockState})
+          .eq('id', barberId);
+
+      ref.invalidate(scheduleLockProvider); // Atualiza o provider
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao alterar agenda: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isTogglingLock = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final appointmentsAsync = ref.watch(appointmentsProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final scheduleLockAsync = ref.watch(scheduleLockProvider);
+
+    final isLeader = userProfileAsync.maybeWhen(
+      data: (u) => u['category'] == 'Barbeiro Líder' || u['role'] == 'admin',
+      orElse: () => false,
+    );
+
+    final barberId = userProfileAsync.maybeWhen(
+      data: (u) => u['barber_id'] as String?,
+      orElse: () => null,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Agenda', style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: const Color(0xFF1E1E1E), elevation: 0),
+      appBar: AppBar(
+        title: const Text('Agenda', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF1E1E1E),
+        elevation: 0,
+        actions: [
+          // Só exibe o botão de fechar agenda para barbeiros comuns
+          if (!isLeader && barberId != null)
+            scheduleLockAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (isLocked) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isLocked ? 'Agenda fechada' : 'Agenda aberta',
+                      style: TextStyle(
+                        color: isLocked ? Colors.red[300] : Colors.green[300],
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    _isTogglingLock
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Switch(
+                            value: !isLocked, // true = aberta, false = fechada
+                            onChanged: (_) => _handleToggleLock(
+                              currentLockState: isLocked,
+                              barberId: barberId,
+                            ),
+                            activeColor: Colors.green,
+                            inactiveThumbColor: Colors.red,
+                            inactiveTrackColor: Colors.red.withOpacity(0.3),
+                          ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
       body: appointmentsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro ao carregar agenda: $err', style: const TextStyle(color: Colors.red))),
@@ -44,15 +146,15 @@ class ScheduleAgendaScreen extends ConsumerWidget {
           // Agrupar os agendamentos pela data (DD/MM/YYYY)
           // Usamos LinkedHashMap (padrão do Dart) para manter a ordem de inserção.
           final Map<String, List<Map<String, dynamic>>> groupedAppointments = {};
-          
+
           // FORÇAMOS O HOJE A SER O PRIMEIRO ELEMENTO SEMPRE
           groupedAppointments[todayStr] = [];
-          
+
           for (var appt in activeAppointments) {
             final startTime = DateTime.parse(appt['start_time'] as String).toLocal();
             // Formatar de forma simples sem pacotes extra: DD/MM/YYYY
             final dateStr = '${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}/${startTime.year}';
-            
+
             if (!groupedAppointments.containsKey(dateStr)) {
               groupedAppointments[dateStr] = [];
             }
@@ -68,10 +170,10 @@ class ScheduleAgendaScreen extends ConsumerWidget {
             final partsA = a.split('/'); // DD/MM/YYYY
             final partsB = b.split('/');
             if (partsA.length != 3 || partsB.length != 3) return 0;
-            
+
             final strA = '${partsA[2]}-${partsA[1]}-${partsA[0]}';
             final strB = '${partsB[2]}-${partsB[1]}-${partsB[0]}';
-            return strA.compareTo(strB); 
+            return strA.compareTo(strB);
           });
 
           // Constrói a lista final (Hoje sempre em 1º)
@@ -90,9 +192,9 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                   tilePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   title: Text(displayTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                   subtitle: Text('${dayAppointments.length} agendamento(s)', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
-                  children: dayAppointments.isEmpty 
+                  children: dayAppointments.isEmpty
                     ? [const Padding(padding: EdgeInsets.all(32.0), child: Text('Agenda livre neste dia.'))]
-                    : dayAppointments.map((appt) => _buildAppointmentCard(context, ref, appt)).toList(),
+                    : dayAppointments.map((appt) => _buildAppointmentCard(context, appt)).toList(),
                 ),
               );
             }).toList(),
@@ -109,7 +211,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
   }
 
   // 1. O CARD AGORA É CLICÁVEL
-  Widget _buildAppointmentCard(BuildContext context, WidgetRef ref, Map<String, dynamic> appt) {
+  Widget _buildAppointmentCard(BuildContext context, Map<String, dynamic> appt) {
     final startTime = DateTime.parse(appt['start_time'] as String).toLocal();
     final endTime = DateTime.parse(appt['end_time'] as String).toLocal();
     final timeStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
@@ -126,7 +228,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
     IconData statusIcon = appt['status'] == 'closed' ? Icons.check_circle : Icons.access_time;
 
     return InkWell(
-      onTap: () => _showActionSheet(context, ref, appt), // ABRE AS OPÇÕES
+      onTap: () => _showActionSheet(context, appt), // ABRE AS OPÇÕES
       borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
@@ -173,7 +275,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
   }
 
   // 2. MENU INFERIOR DE OPÇÕES
-  void _showActionSheet(BuildContext context, WidgetRef ref, Map<String, dynamic> appt) {
+  void _showActionSheet(BuildContext context, Map<String, dynamic> appt) {
     if (appt['status'] == 'closed') {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Este atendimento já foi finalizado.')));
       return;
@@ -211,7 +313,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                   title: const Text('Cancelar Agendamento', style: TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
-                    _showCancelDialog(context, ref, appt['id'] as String); // ABRE O POP-UP DE MOTIVO
+                    _showCancelDialog(context, appt['id'] as String); // ABRE O POP-UP DE MOTIVO
                   },
                 ),
               ],
@@ -223,7 +325,7 @@ class ScheduleAgendaScreen extends ConsumerWidget {
   }
 
   // 3. POP-UP DE CANCELAMENTO COM MOTIVO
-  void _showCancelDialog(BuildContext context, WidgetRef ref, String orderId) {
+  void _showCancelDialog(BuildContext context, String orderId) {
     String selectedReason = 'Cliente não compareceu'; // Valor padrão
     final List<String> reasons = [
       'Cliente não compareceu',
@@ -282,9 +384,9 @@ class ScheduleAgendaScreen extends ConsumerWidget {
                         'status': 'canceled',
                         'cancelation_reason': selectedReason,
                       }).eq('id', orderId);
-                      
+
                       ref.invalidate(appointmentsProvider); // Atualiza a tela
-                      
+
                       if (context.mounted) {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Agendamento cancelado com sucesso!')));

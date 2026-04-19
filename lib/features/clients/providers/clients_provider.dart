@@ -4,11 +4,11 @@ import '../../../core/supabase/providers.dart';
 // Busca a lista de clientes cadastrados na unidade do usuário
 final clientsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final supabase = ref.watch(supabaseProvider);
-  
+
   final response = await supabase
       .from('clients')
-      .select('*')
+      .select('*, created_by_barber:barbers!created_by_barber_id(id, users(name))')
       .order('name'); // Traz em ordem alfabética
-      
+
   return List<Map<String, dynamic>>.from(response);
 });

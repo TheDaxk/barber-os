@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
 import '../providers/appointments_provider.dart';
+import '../providers/schedule_lock_provider.dart';
 import '../../clients/providers/clients_provider.dart';
 
 class ScheduleScreen extends ConsumerStatefulWidget {
-  const ScheduleScreen({super.key});
+  final String? sector;
+
+  const ScheduleScreen({super.key, this.sector});
 
   @override
   ConsumerState<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -209,13 +212,24 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final barbersAsync = ref.watch(barbersProvider);
-    final servicesAsync = ref.watch(servicesProvider);
+    // Usa o provider filtrado pelo setor (se não tiver setor, filtra para 'barbearia' por padrão)
+    final servicesAsync = ref.watch(servicesBySectorProvider(widget.sector ?? 'barbearia'));
     final appointmentsAsync = ref.watch(appointmentsProvider);
     final clientsAsync = ref.watch(clientsProvider);
+    final lockStatusAsync = ref.watch(allBarbersLockStatusProvider);
 
     final bookedSlots = (_selectedBarberId != null && appointmentsAsync.hasValue)
         ? _getBookedSlots(appointmentsAsync.value!, _selectedBarberId!)
         : <String>[];
+
+    // Verifica se a agenda do barbeiro selecionado está travada
+    final Map<String, bool> lockStatus = lockStatusAsync.maybeWhen(
+      data: (data) => data,
+      orElse: () => {},
+    );
+    final isSelectedBarberLocked = _selectedBarberId != null
+        ? (lockStatus[_selectedBarberId] ?? false)
+        : false;
 
     final allSlots = _generateTimeSlots();
     final dateString = '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
@@ -366,6 +380,29 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             if (_selectedBarberId != null) ...[
               const Text('Horário', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              if (isSelectedBarberLocked) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.4)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Este profissional fechou a agenda. Nenhum horário disponível.',
+                          style: TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Container(
                 decoration: BoxDecoration(
                   color: Colors.grey[900],
@@ -395,12 +432,15 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                         itemBuilder: (context, index) {
                           final slot = allSlots[index];
                           final isBooked = bookedSlots.contains(slot);
-                          final isSelected = _selectedTime == slot;
+                          final isLocked = isSelectedBarberLocked;
+                          final isSelected = _selectedTime == slot && !isLocked;
 
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: InkWell(
-                              onTap: isBooked ? null : () => setState(() => _selectedTime = slot),
+                              onTap: (isBooked || isLocked)
+                                  ? null
+                                  : () => setState(() => _selectedTime = slot),
                               borderRadius: BorderRadius.circular(8),
                               child: Container(
                                 width: 70,
@@ -408,11 +448,19 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? Colors.green
-                                      : isBooked
-                                          ? Colors.grey[800]
-                                          : Colors.grey[700],
+                                      : isLocked
+                                          ? Colors.red.withOpacity(0.2)
+                                          : isBooked
+                                              ? Colors.blue.withOpacity(0.2)
+                                              : Colors.grey[700],
                                   borderRadius: BorderRadius.circular(8),
-                                  border: isSelected ? Border.all(color: Colors.greenAccent, width: 2) : null,
+                                  border: isSelected
+                                      ? Border.all(color: Colors.greenAccent, width: 2)
+                                      : isLocked
+                                          ? Border.all(color: Colors.red.withOpacity(0.5))
+                                          : isBooked
+                                              ? Border.all(color: Colors.blue.withOpacity(0.5))
+                                              : null,
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -420,14 +468,19 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                                     Text(
                                       slot,
                                       style: TextStyle(
-                                        color: isBooked ? Colors.grey[600] : Colors.white,
+                                        color: isLocked
+                                            ? Colors.red[300]
+                                            : isBooked
+                                                ? Colors.blue[300]
+                                                : Colors.white,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    if (isBooked) ...[
-                                      const SizedBox(height: 4),
-                                      Icon(Icons.block, size: 12, color: Colors.grey[600]),
-                                    ],
+                                    const SizedBox(height: 4),
+                                    if (isLocked)
+                                      const Text('❌', style: TextStyle(fontSize: 12))
+                                    else if (isBooked)
+                                      const Text('✂️', style: TextStyle(fontSize: 12)),
                                   ],
                                 ),
                               ),
