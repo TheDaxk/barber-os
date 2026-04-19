@@ -125,7 +125,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  Text(phone),
+                                  // Só exibe telefone se for Barbeiro Líder ou admin
+                                  if (isLeader)
+                                    Text(phone)
+                                  else
+                                    Text(
+                                      '••••••••••',
+                                      style: TextStyle(color: Colors.grey[600], letterSpacing: 2),
+                                    ),
                                   if (subscriptionPlan != null) ...[
                                     const SizedBox(height: 4),
                                     Container(

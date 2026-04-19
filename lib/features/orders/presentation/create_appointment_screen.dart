@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/order_items_provider.dart';
+import '../providers/schedule_lock_provider.dart';
 import '../../clients/providers/clients_provider.dart'; // NOVO: Import do provedor de clientes
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
-  const CreateAppointmentScreen({super.key});
+  /// Setor para filtrar serviços. null = exibe todos (padrão: barbearia)
+  final String? sector;
+
+  const CreateAppointmentScreen({super.key, this.sector});
 
   @override
   ConsumerState<CreateAppointmentScreen> createState() => _CreateAppointmentScreenState();
@@ -197,10 +201,12 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   @override
   Widget build(BuildContext context) {
     final barbersAsync = ref.watch(barbersProvider);
-    final servicesAsync = ref.watch(servicesProvider);
+    // Usa o provider filtrado pelo setor (se não tiver setor, filtra para 'barbearia' por padrão)
+    final servicesAsync = ref.watch(servicesBySectorProvider(widget.sector ?? 'barbearia'));
     final appointmentsAsync = ref.watch(appointmentsProvider);
-    final clientsAsync = ref.watch(clientsProvider); 
+    final clientsAsync = ref.watch(clientsProvider);
     final userProfileAsync = ref.watch(userProfileProvider); // RBAC Permissões
+    final lockStatusAsync = ref.watch(allBarbersLockStatusProvider);
 
     final bool isLeader = userProfileAsync.maybeWhen(
       data: (user) => user['category'] == 'Barbeiro Líder' || user['role'] == 'admin',
@@ -215,9 +221,18 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     // Se é líder, exige _selectedBarber. Se não, exige loggedInBarberId.
     final String? effectiveBarberId = isLeader ? (_selectedBarber?['id'] as String?) : loggedInBarberId;
 
-    final bookedSlots = (effectiveBarberId != null && appointmentsAsync.hasValue) 
-        ? _getBookedSlots(appointmentsAsync.value!, effectiveBarberId) 
+    final bookedSlots = (effectiveBarberId != null && appointmentsAsync.hasValue)
+        ? _getBookedSlots(appointmentsAsync.value!, effectiveBarberId)
         : <String>[];
+
+    // Verifica se a agenda do barbeiro selecionado está travada
+    final Map<String, bool> lockStatus = lockStatusAsync.maybeWhen(
+      data: (data) => data,
+      orElse: () => {},
+    );
+    final isSelectedBarberLocked = effectiveBarberId != null
+        ? (lockStatus[effectiveBarberId] ?? false)
+        : false;
         
     final allSlots = _generateTimeSlots();
     final dateString = '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
@@ -399,6 +414,29 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                 ],
               ),
               const SizedBox(height: 12),
+              if (isSelectedBarberLocked) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.4)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.lock_outline, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Este profissional fechou a agenda. Nenhum horário disponível.',
+                          style: TextStyle(color: Colors.red, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               Container(
                 height: 180, padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[800]!)),
@@ -407,18 +445,52 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                     spacing: 8, runSpacing: 8,
                     children: allSlots.map((slot) {
                       final isBooked = bookedSlots.contains(slot);
-                      final isSelected = _selectedTime == slot;
+                      final isLocked = isSelectedBarberLocked;
+                      final isSelected = _selectedTime == slot && !isLocked;
                       return InkWell(
-                        onTap: isBooked ? null : () => setState(() => _selectedTime = slot),
+                        onTap: (isBooked || isLocked) ? null : () => setState(() => _selectedTime = slot),
                         child: Container(
                           width: 75, padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.green : isBooked ? Colors.grey[900] : Colors.grey[800],
+                            color: isSelected
+                                ? Colors.green
+                                : isLocked
+                                    ? Colors.red.withOpacity(0.2)
+                                    : isBooked
+                                        ? Colors.blue.withOpacity(0.2)
+                                        : Colors.grey[800],
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isSelected ? Colors.green : isBooked ? Colors.red.withOpacity(0.3) : Colors.transparent),
+                            border: isSelected
+                                ? Border.all(color: Colors.greenAccent, width: 2)
+                                : isLocked
+                                    ? Border.all(color: Colors.red.withOpacity(0.5))
+                                    : isBooked
+                                        ? Border.all(color: Colors.blue.withOpacity(0.5))
+                                        : null,
                           ),
                           alignment: Alignment.center,
-                          child: Text(slot, style: TextStyle(color: isSelected ? Colors.black : isBooked ? Colors.grey[600] : Colors.white, decoration: isBooked ? TextDecoration.lineThrough : null)),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                slot,
+                                style: TextStyle(
+                                  color: isLocked
+                                      ? Colors.red[300]
+                                      : isBooked
+                                          ? Colors.blue[300]
+                                          : Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              if (isLocked)
+                                const Text('❌', style: TextStyle(fontSize: 12))
+                              else if (isBooked)
+                                const Text('✂️', style: TextStyle(fontSize: 12)),
+                            ],
+                          ),
                         ),
                       );
                     }).toList(),

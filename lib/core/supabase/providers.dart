@@ -28,13 +28,32 @@ final userProfileProvider = FutureProvider.autoDispose<Map<String, dynamic>>((re
 
 final servicesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final supabase = ref.watch(supabaseProvider);
-  
+
   final response = await supabase
       .from('services')
       .select('*')
       .eq('is_active', true)
       .order('name');
-      
+
+  return List<Map<String, dynamic>>.from(response);
+});
+
+/// Provider filtrado por setor — use este ao abrir agendamentos de uma tela específica
+/// sector: 'barbearia', 'salao', ou 'premium'. null = retorna todos (comportamento padrão).
+final servicesBySectorProvider = FutureProvider.autoDispose
+    .family<List<Map<String, dynamic>>, String?>((ref, sector) async {
+  final supabase = ref.watch(supabaseProvider);
+
+  var query = supabase
+      .from('services')
+      .select('*')
+      .eq('is_active', true);
+
+  if (sector != null) {
+    query = query.eq('sector', sector);
+  }
+
+  final response = await query.order('name');
   return List<Map<String, dynamic>>.from(response);
 });
 
