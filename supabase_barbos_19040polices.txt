@@ -1,0 +1,260 @@
+ barbers
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+barbers_insert
+INSERT	
+authenticated
+
+
+barbers_select
+SELECT	
+authenticated
+
+
+barbers_update
+UPDATE	
+authenticated
+
+
+users_can_insert_barbers
+INSERT	
+authenticated
+
+
+users_can_update_barbers
+UPDATE	
+authenticated
+
+business_hours
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+business_hours_select
+SELECT	
+authenticated
+
+
+business_hours_write
+ALL	
+authenticated
+
+
+users_can_insert_business_hours
+INSERT	
+authenticated
+
+
+users_can_select_business_hours
+SELECT	
+authenticated
+
+
+users_can_update_business_hours
+UPDATE	
+authenticated
+
+client_history
+
+Disable RLS
+
+Create policy
+
+This table can be accessed via the Data API but no RLS policies exist so no data will be returned.
+
+No policies created yet
+
+clients
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+clients_insert
+INSERT	
+authenticated
+
+
+clients_select
+SELECT	
+authenticated
+
+
+clients_update
+UPDATE	
+authenticated
+
+expenses
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+Donos tem acesso total as despesas
+ALL	
+authenticated
+
+
+Equipe acessa despesas da sua unidade
+ALL	
+authenticated
+
+order_items
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+Acesso aos itens da comanda via RLS da comanda
+ALL	
+authenticated
+
+
+order_items_delete
+DELETE	
+authenticated
+
+
+order_items_insert
+INSERT	
+authenticated
+
+
+order_items_select
+SELECT	
+authenticated
+
+
+order_items_update
+UPDATE	
+authenticated
+
+orders
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+orders_insert
+INSERT	
+authenticated
+
+
+orders_select
+SELECT	
+authenticated
+
+
+orders_update
+UPDATE	
+authenticated
+
+products
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+products_delete
+DELETE	
+authenticated
+
+
+products_insert
+INSERT	
+authenticated
+
+
+products_select
+SELECT	
+authenticated
+
+
+products_update
+UPDATE	
+authenticated
+
+services
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+services_insert
+INSERT	
+authenticated
+
+
+services_select
+SELECT	
+authenticated
+
+
+services_update
+UPDATE	
+authenticated
+
+units
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+Donos veem todas as unidades
+ALL	
+authenticated
+
+
+Usuários veem apenas a sua própria unidade
+SELECT	
+authenticated
+
+users
+
+Disable RLS
+
+Create policy
+
+Name	Command	Applied to	Actions
+
+users_can_update_users
+UPDATE	
+authenticated
+
+
+users_insert
+INSERT	
+authenticated
+
+
+users_select
+SELECT	
+authenticated
+
+
+users_update
+UPDATE	
+authenticated
+

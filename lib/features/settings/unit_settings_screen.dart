@@ -12,7 +12,7 @@ final unitSettingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((r
   final userData = await supabase.from('users').select('unit_id').eq('id', user.id).single();
   final unitId = userData['unit_id'] as String;
 
-  final unitData = await supabase.from('units').select().eq('id', unitId).single();
+  final unitData = await supabase.from('units').select('*, business_hours(*)').eq('id', unitId).single();
 
   return Map<String, dynamic>.from(unitData);
 });
@@ -55,22 +55,33 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
   }
 
   void _loadSettingsFromUnit(Map<String, dynamic> unitData) {
-    // Carrega horários do banco se existirem
-    for (var dia in _diasSemana) {
-      final openKey = '${dia.toLowerCase()}_open';
-      final closeKey = '${dia.toLowerCase()}_close';
+    if (unitData['business_hours'] != null) {
+      final List<dynamic> hours = unitData['business_hours'];
+      final diasMap = {
+        'segunda': 'Segunda-feira',
+        'terca': 'Terça-feira',
+        'quarta': 'Quarta-feira',
+        'quinta': 'Quinta-feira',
+        'sexta': 'Sexta-feira',
+        'sabado': 'Sábado',
+        'domingo': 'Domingo',
+      };
 
-      if (unitData.containsKey(openKey) && unitData[openKey] != null) {
-        final parts = unitData[openKey].toString().split(':');
-        _openingTimes[dia] = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      for (var h in hours) {
+        final dayKey = h['day'];
+        final dia = diasMap[dayKey];
+        if (dia != null) {
+          _isOpen[dia] = h['is_open'] ?? true;
+          if (h['open_time'] != null) {
+            final parts = h['open_time'].toString().split(':');
+            _openingTimes[dia] = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+          }
+          if (h['close_time'] != null) {
+            final parts = h['close_time'].toString().split(':');
+            _closingTimes[dia] = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+          }
+        }
       }
-      if (unitData.containsKey(closeKey) && unitData[closeKey] != null) {
-        final parts = unitData[closeKey].toString().split(':');
-        _closingTimes[dia] = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-      }
-
-      final dayOffKey = '${dia.toLowerCase()}_off';
-      _isOpen[dia] = !(unitData.containsKey(dayOffKey) && unitData[dayOffKey] == true);
     }
     setState(() {});
   }
@@ -120,17 +131,37 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
       final userData = await supabase.from('users').select('unit_id').eq('id', user.id).single();
       final unitId = userData['unit_id'];
 
-      // Constrói o objeto de atualização
-      final Map<String, dynamic> updates = {};
+      // Get existing business_hours
+      final currentHoursList = await supabase.from('business_hours').select('id, day').eq('unit_id', unitId);
+      final currentHoursMap = { for (var item in currentHoursList) item['day'] as String : item['id'] as String };
+
+      final diasToDb = {
+        'Segunda-feira': 'segunda',
+        'Terça-feira': 'terca',
+        'Quarta-feira': 'quarta',
+        'Quinta-feira': 'quinta',
+        'Sexta-feira': 'sexta',
+        'Sábado': 'sabado',
+        'Domingo': 'domingo',
+      };
 
       for (var dia in _diasSemana) {
-        final dayLower = dia.toLowerCase();
-        updates['${dayLower}_open'] = _formatTime(_openingTimes[dia]!);
-        updates['${dayLower}_close'] = _formatTime(_closingTimes[dia]!);
-        updates['${dayLower}_off'] = !_isOpen[dia]!;
-      }
+        final dbDay = diasToDb[dia]!;
+        
+        final data = {
+          'unit_id': unitId,
+          'day': dbDay,
+          'open_time': _isOpen[dia]! ? _formatTime(_openingTimes[dia]!) : null,
+          'close_time': _isOpen[dia]! ? _formatTime(_closingTimes[dia]!) : null,
+          'is_open': _isOpen[dia]!,
+        };
 
-      await supabase.from('units').update(updates).eq('id', unitId as Object);
+        if (currentHoursMap.containsKey(dbDay)) {
+           await supabase.from('business_hours').update(data).eq('id', currentHoursMap[dbDay]!);
+        } else {
+           await supabase.from('business_hours').insert(data);
+        }
+      }
 
       ref.invalidate(unitSettingsProvider);
 

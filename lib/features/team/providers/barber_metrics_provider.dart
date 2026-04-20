@@ -15,7 +15,7 @@ final barberMetricsProvider = FutureProvider.autoDispose.family<Map<String, dyna
   // Busca comandas fechadas do barbeiro no mês atual
   final response = await supabase
       .from('orders')
-      .select('total, status')
+      .select('id, total, status')
       .eq('barber_id', barberId)
       .eq('status', 'closed')
       .gte('start_time', firstDayStr)
@@ -35,40 +35,42 @@ final barberMetricsProvider = FutureProvider.autoDispose.family<Map<String, dyna
   // Tenta buscar top serviços via order_items
   List<Map<String, dynamic>> topServices = [];
   try {
-    // Busca order_items com serviço associated
-    final itemsResponse = await supabase
-        .from('order_items')
-        .select('service_id, services(name)')
-        .gte('created_at', firstDayStr)
-        .lte('created_at', lastDayStr);
+    final orderIds = orders.map((o) => o['id']).toList();
+    if (orderIds.isNotEmpty) {
+      final itemsResponse = await supabase
+          .from('order_items')
+          .select('reference_id, name, item_type')
+          .inFilter('order_id', orderIds);
 
-    final items = List<Map<String, dynamic>>.from(itemsResponse);
+      final items = List<Map<String, dynamic>>.from(itemsResponse);
 
-    // Conta frequência de cada serviço
-    final Map<String, int> serviceCount = {};
-    final Map<String, String> serviceName = {};
+      // Conta frequência de cada serviço
+      final Map<String, int> serviceCount = {};
+      final Map<String, String> serviceName = {};
 
-    for (var item in items) {
-      final serviceId = item['service_id']?.toString();
-      if (serviceId != null) {
-        serviceCount[serviceId] = (serviceCount[serviceId] ?? 0) + 1;
-        if (item['services'] != null && item['services']['name'] != null) {
-          serviceName[serviceId] = item['services']['name'] as String;
+      for (var item in items) {
+        // Conta apenas os serviços
+        if (item['item_type'] == 'service') {
+          final serviceId = item['reference_id']?.toString();
+          if (serviceId != null) {
+            serviceCount[serviceId] = (serviceCount[serviceId] ?? 0) + 1;
+            serviceName[serviceId] = item['name'] as String;
+          }
         }
       }
+
+      // Ordena e pega top 3
+      final sortedEntries = serviceCount.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      topServices = sortedEntries.take(3).map((entry) {
+        return {
+          'id': entry.key,
+          'name': serviceName[entry.key] ?? 'Serviço',
+          'count': entry.value,
+        };
+      }).toList();
     }
-
-    // Ordena e pega top 3
-    final sortedEntries = serviceCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    topServices = sortedEntries.take(3).map((entry) {
-      return {
-        'id': entry.key,
-        'name': serviceName[entry.key] ?? 'Serviço',
-        'count': entry.value,
-      };
-    }).toList();
   } catch (e) {
     // order_items não existe ou erro - retorna lista vazia
     topServices = [];

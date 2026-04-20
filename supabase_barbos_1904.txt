@@ -1,0 +1,168 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.barbers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  unit_id uuid NOT NULL,
+  category text NOT NULL,
+  commission_rate numeric DEFAULT 40.00,
+  is_active boolean DEFAULT true,
+  last_name character varying,
+  address text,
+  role_title character varying DEFAULT 'Barbeiro(a)'::character varying,
+  email character varying,
+  name character varying,
+  phone character varying,
+  active boolean DEFAULT true,
+  unit_name text,
+  sector USER-DEFINED NOT NULL DEFAULT 'barbearia'::business_sector,
+  is_schedule_locked boolean DEFAULT false,
+  CONSTRAINT barbers_pkey PRIMARY KEY (id),
+  CONSTRAINT barbers_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT barbers_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id)
+);
+CREATE TABLE public.business_hours (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid NOT NULL,
+  day character varying NOT NULL,
+  open_time character varying,
+  close_time character varying,
+  is_open boolean DEFAULT true,
+  CONSTRAINT business_hours_pkey PRIMARY KEY (id),
+  CONSTRAINT business_hours_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id)
+);
+CREATE TABLE public.client_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL,
+  order_id uuid NOT NULL,
+  item_type USER-DEFINED NOT NULL,
+  reference_id uuid,
+  name character varying NOT NULL,
+  price numeric NOT NULL,
+  barber_id uuid,
+  attended_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT client_history_pkey PRIMARY KEY (id),
+  CONSTRAINT client_history_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id),
+  CONSTRAINT client_history_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
+  CONSTRAINT client_history_barber_id_fkey FOREIGN KEY (barber_id) REFERENCES public.barbers(id)
+);
+CREATE TABLE public.clients (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid,
+  name character varying NOT NULL,
+  phone character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  birthday date,
+  notes text,
+  is_premium boolean DEFAULT false,
+  is_vip boolean DEFAULT false,
+  subscription_plan text CHECK (subscription_plan = ANY (ARRAY['basic'::text, 'premium'::text])),
+  subscription_acquired_at date,
+  created_by_barber_id uuid,
+  CONSTRAINT clients_pkey PRIMARY KEY (id),
+  CONSTRAINT clients_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id),
+  CONSTRAINT clients_created_by_barber_id_fkey FOREIGN KEY (created_by_barber_id) REFERENCES public.barbers(id)
+);
+CREATE TABLE public.expenses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid NOT NULL,
+  category character varying NOT NULL,
+  description text,
+  amount numeric NOT NULL,
+  created_by uuid,
+  expense_date date DEFAULT CURRENT_DATE,
+  CONSTRAINT expenses_pkey PRIMARY KEY (id),
+  CONSTRAINT expenses_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id),
+  CONSTRAINT expenses_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.order_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  order_id uuid NOT NULL,
+  item_type USER-DEFINED NOT NULL,
+  reference_id uuid NOT NULL,
+  name character varying NOT NULL,
+  quantity integer DEFAULT 1,
+  unit_price numeric NOT NULL,
+  commission_pct numeric NOT NULL,
+  commission_value numeric NOT NULL,
+  CONSTRAINT order_items_pkey PRIMARY KEY (id),
+  CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id)
+);
+CREATE TABLE public.orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid NOT NULL,
+  barber_id uuid,
+  opened_by uuid,
+  status USER-DEFINED DEFAULT 'open'::order_status,
+  subtotal numeric DEFAULT 0.00,
+  discount numeric DEFAULT 0.00,
+  total numeric DEFAULT 0.00,
+  payment_method USER-DEFINED,
+  commission_total numeric DEFAULT 0.00,
+  opened_at timestamp with time zone DEFAULT now(),
+  closed_at timestamp with time zone,
+  notes text,
+  start_time timestamp with time zone,
+  end_time timestamp with time zone,
+  client_name character varying DEFAULT 'Cliente Avulso'::character varying,
+  cancelation_reason text,
+  client_id uuid,
+  CONSTRAINT orders_pkey PRIMARY KEY (id),
+  CONSTRAINT orders_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id),
+  CONSTRAINT orders_barber_id_fkey FOREIGN KEY (barber_id) REFERENCES public.barbers(id),
+  CONSTRAINT orders_opened_by_fkey FOREIGN KEY (opened_by) REFERENCES public.users(id),
+  CONSTRAINT orders_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.clients(id)
+);
+CREATE TABLE public.products (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid NOT NULL,
+  name text NOT NULL,
+  price numeric NOT NULL,
+  stock integer DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT products_pkey PRIMARY KEY (id),
+  CONSTRAINT products_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id)
+);
+CREATE TABLE public.services (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid,
+  name character varying NOT NULL,
+  category text,
+  price numeric NOT NULL,
+  commission_pct numeric DEFAULT 40.00,
+  is_active boolean DEFAULT true,
+  duration_minutes integer DEFAULT 30,
+  is_combo boolean DEFAULT false,
+  sector USER-DEFINED NOT NULL DEFAULT 'barbearia'::business_sector,
+  CONSTRAINT services_pkey PRIMARY KEY (id),
+  CONSTRAINT services_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id)
+);
+CREATE TABLE public.units (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name character varying NOT NULL,
+  address text,
+  phone character varying,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  open_time time without time zone DEFAULT '07:00:00'::time without time zone,
+  close_time time without time zone DEFAULT '22:00:00'::time without time zone,
+  active boolean DEFAULT true,
+  location text,
+  CONSTRAINT units_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unit_id uuid,
+  name character varying NOT NULL,
+  email character varying NOT NULL UNIQUE,
+  password_hash text,
+  role USER-DEFINED NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  phone text,
+  CONSTRAINT users_pkey PRIMARY KEY (id),
+  CONSTRAINT users_unit_id_fkey FOREIGN KEY (unit_id) REFERENCES public.units(id)
+);

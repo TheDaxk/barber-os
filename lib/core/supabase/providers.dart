@@ -118,17 +118,52 @@ final premiumMetricsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
     unitId = userProfile['unit_id'] as String;
   }
 
-  // Busca itens de pedidos fechados no mês da unidade que sejam do setor premium
-  final response = await supabase
-      .from('order_items')
-      .select('unit_price, quantity, orders!inner(status, closed_at, unit_id), services!inner(sector)')
-      .eq('orders.status', 'closed')
-      .eq('orders.unit_id', unitId)
-      .eq('services.sector', 'premium')
-      .gte('orders.closed_at', startOfMonth)
-      .lte('orders.closed_at', endOfMonth);
+  // Busca orders fechados no mes daquela unidade
+  final ordersResponse = await supabase
+      .from('orders')
+      .select('id')
+      .eq('status', 'closed')
+      .eq('unit_id', unitId)
+      .gte('closed_at', startOfMonth)
+      .lte('closed_at', endOfMonth);
 
-  final items = List<Map<String, dynamic>>.from(response);
+  final orderIds = (ordersResponse as List).map((e) => e['id']).toList();
+
+  if (orderIds.isEmpty) {
+    return {
+      'faturamento': 0.0,
+      'atendimentos': 0,
+      'ticket_medio': 0.0,
+      'meta_mensal': 6000.0,
+    };
+  }
+
+  // Busca lista de IDs de servicos que sao premium
+  final servicesResponse = await supabase
+      .from('services')
+      .select('id')
+      .eq('sector', 'premium');
+
+  final premiumServiceIds = (servicesResponse as List).map((e) => e['id']).toList();
+
+  if (premiumServiceIds.isEmpty) {
+    return {
+      'faturamento': 0.0,
+      'atendimentos': 0,
+      'ticket_medio': 0.0,
+      'meta_mensal': 6000.0,
+    };
+  }
+
+  // Busca itens de order_items validando os servicos e orders passados
+  final itemsResponse = await supabase
+      .from('order_items')
+      .select('unit_price, quantity')
+      .eq('item_type', 'service')
+      .inFilter('order_id', orderIds)
+      .inFilter('reference_id', premiumServiceIds);
+
+  final items = List<Map<String, dynamic>>.from(itemsResponse);
 
   double faturamento = 0;
   int atendimentos = items.length; // Cada item de serviço premium conta como um atendimento premium
@@ -141,6 +176,6 @@ final premiumMetricsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
     'faturamento': faturamento,
     'atendimentos': atendimentos,
     'ticket_medio': atendimentos > 0 ? faturamento / atendimentos : 0.0,
-    'meta_mensal': 6000.0, // Meta fixa por enquanto, como no mock
+    'meta_mensal': 6000.0,
   };
 });
