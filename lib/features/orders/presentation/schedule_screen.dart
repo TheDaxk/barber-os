@@ -4,6 +4,8 @@ import '../../../core/supabase/providers.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/schedule_lock_provider.dart';
 import '../../clients/providers/clients_provider.dart';
+import '../../../core/providers/selected_unit_provider.dart';
+import '../../units/providers/business_hours_provider.dart';
 
 class ScheduleScreen extends ConsumerStatefulWidget {
   final String? sector;
@@ -44,13 +46,21 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
     });
   }
 
-  List<String> _generateTimeSlots() {
+  List<String> _generateTimeSlots({int startHour = 9, int endHour = 19}) {
     List<String> slots = [];
-    for (int h = 9; h <= 19; h++) {
+    for (int h = startHour; h <= endHour; h++) {
       slots.add('${h.toString().padLeft(2, '0')}:00');
-      slots.add('${h.toString().padLeft(2, '0')}:30');
+      if (h < endHour) {
+        slots.add('${h.toString().padLeft(2, '0')}:30');
+      }
     }
     return slots;
+  }
+
+  /// Converte o dia da semana (1=Monday) para o nome usado na tabela business_hours
+  String _dayOfWeekToName(int weekday) {
+    const days = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+    return days[weekday - 1];
   }
 
   String get _calculatedEndTime {
@@ -132,6 +142,10 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       final userId = supabase.auth.currentUser!.id;
       final userRes = await supabase.from('users').select('unit_id').eq('id', userId).single();
 
+      // Resolve a unidade ativa — prioriza seleção global
+      final selectedUnit = ref.read(selectedUnitIdProvider);
+      final unitId = selectedUnit ?? (userRes['unit_id'] as String);
+
       final startParts = _selectedTime!.split(':');
       final startDateTime = DateTime(
         _selectedDate.year,
@@ -148,7 +162,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
       // Inserir a ordem
       final orderResponse = await supabase.from('orders').insert({
-        'unit_id': userRes['unit_id'],
+        'unit_id': unitId,
         'barber_id': _selectedBarberId,
         'client_id': _selectedClient?['id'],
         'opened_by': userId,
@@ -231,7 +245,42 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         ? (lockStatus[_selectedBarberId] ?? false)
         : false;
 
-    final allSlots = _generateTimeSlots();
+    // Busca horário de funcionamento da unidade para o dia selecionado
+    final selectedUnit = ref.watch(selectedUnitIdProvider);
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final unitIdForHours = selectedUnit ?? userProfileAsync.maybeWhen(
+      data: (user) => user['unit_id'] as String?,
+      orElse: () => null,
+    );
+    final businessHoursAsync = unitIdForHours != null
+        ? ref.watch(unitBusinessHoursProvider(unitIdForHours))
+        : null;
+
+    // Gera slots dinâmicos baseados no horário de funcionamento do dia
+    final dayName = _dayOfWeekToName(_selectedDate.weekday);
+    int startHour = 9;
+    int endHour = 19;
+    bool isDayClosed = false;
+
+    if (businessHoursAsync != null) {
+      businessHoursAsync.whenData((hours) {
+        final dayHour = hours.where((h) => h.day == dayName).firstOrNull;
+        if (dayHour != null) {
+          if (!dayHour.isOpen) {
+            isDayClosed = true;
+          } else {
+            if (dayHour.openTime != null) {
+              startHour = int.tryParse(dayHour.openTime!.split(':')[0]) ?? 9;
+            }
+            if (dayHour.closeTime != null) {
+              endHour = int.tryParse(dayHour.closeTime!.split(':')[0]) ?? 19;
+            }
+          }
+        }
+      });
+    }
+
+    final allSlots = isDayClosed ? <String>[] : _generateTimeSlots(startHour: startHour, endHour: endHour);
     final dateString = '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
 
     return Scaffold(
@@ -385,9 +434,9 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.4)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
                   ),
                   child: const Row(
                     children: [
@@ -449,17 +498,17 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                                   color: isSelected
                                       ? Colors.green
                                       : isLocked
-                                          ? Colors.red.withOpacity(0.2)
+                                          ? Colors.red.withValues(alpha: 0.2)
                                           : isBooked
-                                              ? Colors.blue.withOpacity(0.2)
+                                              ? Colors.blue.withValues(alpha: 0.2)
                                               : Colors.grey[700],
                                   borderRadius: BorderRadius.circular(8),
                                   border: isSelected
                                       ? Border.all(color: Colors.greenAccent, width: 2)
                                       : isLocked
-                                          ? Border.all(color: Colors.red.withOpacity(0.5))
+                                          ? Border.all(color: Colors.red.withValues(alpha: 0.5))
                                           : isBooked
-                                              ? Border.all(color: Colors.blue.withOpacity(0.5))
+                                              ? Border.all(color: Colors.blue.withValues(alpha: 0.5))
                                               : null,
                                 ),
                                 child: Column(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart'; // Import do Supabase
 import '../providers/appointments_provider.dart';
-import '../providers/schedule_lock_provider.dart';
 import 'create_appointment_screen.dart';
 import 'checkout_screen.dart';
 
@@ -15,107 +14,14 @@ class ScheduleAgendaScreen extends ConsumerStatefulWidget {
 }
 
 class _ScheduleAgendaScreenState extends ConsumerState<ScheduleAgendaScreen> {
-  bool _isTogglingLock = false;
-
-  Future<void> _handleToggleLock({
-    required bool currentLockState,
-    required String barberId,
-  }) async {
-    if (_isTogglingLock) return;
-    setState(() => _isTogglingLock = true);
-
-    final supabase = ref.read(supabaseProvider);
-
-    try {
-      await supabase
-          .from('barbers')
-          .update({'is_schedule_locked': !currentLockState})
-          .eq('id', barberId);
-
-      ref.invalidate(scheduleLockProvider); // Atualiza o provider
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao alterar agenda: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isTogglingLock = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final appointmentsAsync = ref.watch(appointmentsProvider);
-    final userProfileAsync = ref.watch(userProfileProvider);
-    final scheduleLockAsync = ref.watch(scheduleLockProvider);
-
-    final isLeader = userProfileAsync.maybeWhen(
-      data: (u) => u['category'] == 'Barbeiro Líder' || u['role'] == 'admin',
-      orElse: () => false,
-    );
-
-    final barberId = userProfileAsync.maybeWhen(
-      data: (u) => u['barber_id'] as String?,
-      orElse: () => null,
-    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agenda', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF1E1E1E),
-        elevation: 0,
-        actions: [
-          // Só exibe o botão de fechar agenda para barbeiros comuns
-          if (!isLeader && barberId != null)
-            scheduleLockAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (isLocked) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isLocked ? 'Agenda fechada' : 'Agenda aberta',
-                      style: TextStyle(
-                        color: isLocked ? Colors.red[300] : Colors.green[300],
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    _isTogglingLock
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Switch(
-                            value: !isLocked, // true = aberta, false = fechada
-                            onChanged: (_) => _handleToggleLock(
-                              currentLockState: isLocked,
-                              barberId: barberId,
-                            ),
-                            activeColor: Colors.green,
-                            inactiveThumbColor: Colors.red,
-                            inactiveTrackColor: Colors.red.withOpacity(0.3),
-                          ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+      backgroundColor: Colors.transparent,
+      appBar: null,
       body: appointmentsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro ao carregar agenda: $err', style: const TextStyle(color: Colors.red))),

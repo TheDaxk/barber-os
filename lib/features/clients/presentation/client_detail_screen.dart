@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/client_history_provider.dart';
+import '../../../core/rbac/app_permissions.dart';
+import '../../../core/supabase/providers.dart';
 
 class ClientDetailScreen extends ConsumerWidget {
   final Map<String, dynamic> client;
@@ -9,11 +11,25 @@ class ClientDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final AppPermissions perm = userProfileAsync.maybeWhen(
+      data: (u) => AppPermissions(u),
+      orElse: () => const AppPermissions({}),
+    );
+
     final clientId = client['id'].toString();
     final historyAsync = ref.watch(clientHistoryProvider(clientId));
 
-    final name = client['name'] ?? 'Cliente';
-    final phone = client['phone'] ?? 'Sem telefone';
+    final String name = client['name'] as String? ?? 'Cliente';
+    final String rawPhone = client['phone'] as String? ?? 'Sem telefone';
+    
+    // Regra de RBAC para visualização do telefone (mascaramento)
+    final String phone = (perm.canViewClientPhone || rawPhone == 'Sem telefone')
+        ? rawPhone
+        : (rawPhone.length > 5 
+            ? '${rawPhone.substring(0, rawPhone.length - 4)}****' 
+            : '****');
+
     final notes = client['notes'];
     final birthday = client['birthday'];
     final subscriptionPlan = client['subscription_plan']?.toString();
@@ -37,8 +53,8 @@ class ClientDetailScreen extends ConsumerWidget {
                 CircleAvatar(
                   radius: 32,
                   backgroundColor: isPremium
-                      ? Colors.amber.withOpacity(0.2)
-                      : Colors.green.withOpacity(0.2),
+                      ? Colors.amber.withValues(alpha: 0.2)
+                      : Colors.green.withValues(alpha: 0.2),
                   child: Text(
                     initial,
                     style: TextStyle(
@@ -67,13 +83,13 @@ class ClientDetailScreen extends ConsumerWidget {
                             horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: isPremium
-                                ? Colors.amber.withOpacity(0.15)
-                                : Colors.blue.withOpacity(0.15),
+                                ? Colors.amber.withValues(alpha: 0.15)
+                                : Colors.blue.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: isPremium
-                                  ? Colors.amber.withOpacity(0.5)
-                                  : Colors.blue.withOpacity(0.5),
+                                  ? Colors.amber.withValues(alpha: 0.5)
+                                  : Colors.blue.withValues(alpha: 0.5),
                             ),
                           ),
                           child: Text(
@@ -165,7 +181,7 @@ class ClientDetailScreen extends ConsumerWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: history.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (context, index) =>
                       const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final item = history[index];
@@ -189,8 +205,8 @@ class ClientDetailScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isService
-                                  ? Colors.blue.withOpacity(0.15)
-                                  : Colors.purple.withOpacity(0.15),
+                                  ? Colors.blue.withValues(alpha: 0.15)
+                                  : Colors.purple.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(

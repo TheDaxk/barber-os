@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
+import '../../../core/providers/selected_unit_provider.dart';
 import '../providers/products_provider.dart';
 
 class ProductsManagementScreen extends ConsumerStatefulWidget {
@@ -281,9 +282,13 @@ class _ProductsManagementScreenState extends ConsumerState<ProductsManagementScr
                 final userId = supabase.auth.currentUser!.id;
                 final userRes = await supabase.from('users').select('unit_id').eq('id', userId).single();
 
+                // Resolve a unidade ativa — prioriza seleção global
+                final selectedUnit = ref.read(selectedUnitIdProvider);
+                final unitId = selectedUnit ?? (userRes['unit_id'] as String);
+
                 await addProduct(
                   supabase: supabase,
-                  unitId: userRes['unit_id'] as String,
+                  unitId: unitId,
                   name: name,
                   price: price,
                   stock: stock,

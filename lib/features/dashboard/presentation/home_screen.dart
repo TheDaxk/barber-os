@@ -4,9 +4,6 @@ import '../providers/dashboard_provider.dart';
 import '../../orders/presentation/create_appointment_screen.dart';
 import '../../orders/presentation/waiting_list_screen.dart';
 import '../../reports/presentation/quick_report_screen.dart';
-import '../../../core/providers/selected_unit_provider.dart';
-import '../../../core/providers/units_provider.dart';
-import '../../../core/supabase/providers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -24,13 +21,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(dashboardProvider);
 
-    final userProfileAsync = ref.watch(userProfileProvider);
-    final isLeader = userProfileAsync.maybeWhen(
-      data: (u) => u['category'] == 'Barbeiro Líder' || u['role'] == 'admin',
-      orElse: () => false,
-    );
-    final selectedUnitId = ref.watch(selectedUnitIdProvider);
-
     // Obter data em português
     final now = DateTime.now();
     final diasSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
@@ -47,15 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cabeçalho dinâmico
-            if (isLeader)
-              _buildUnitSelectorHeader(selectedUnitId)
-            else
-              const Text(
-                'Minha Unidade',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-            const SizedBox(height: 4),
+            // Cabeçalho dinâmico (Removido seletor local pois agora é global)
             Text(
               hojeStr,
               style: TextStyle(fontSize: 14, color: Colors.grey[400]),
@@ -484,85 +466,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildUnitSelectorHeader(String? selectedUnitId) {
-    final unitsAsync = ref.watch(unitsProvider);
-
-    return unitsAsync.when(
-      loading: () => const Text('Carregando...', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      error: (err, stack) => const Text('Erro ao carregar unidades'),
-      data: (units) {
-        final selectedUnit = units.firstWhere(
-          (u) => u['id'] == selectedUnitId,
-          orElse: () => {'name': 'Todas as Unidades'},
-        );
-
-        return InkWell(
-          onTap: () => _showUnitPicker(units),
-          borderRadius: BorderRadius.circular(8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                selectedUnit['name'] as String? ?? 'Unidade',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 6),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey, size: 22),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showUnitPicker(List<Map<String, dynamic>> units) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Selecionar Unidade', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              const Divider(color: Colors.white10, height: 1),
-              ListTile(
-                leading: const Icon(Icons.home_outlined, color: Colors.grey),
-                title: const Text('Minha Unidade (Padrão)'),
-                trailing: ref.read(selectedUnitIdProvider) == null
-                    ? const Icon(Icons.check, color: Colors.green)
-                    : null,
-                onTap: () {
-                  ref.read(selectedUnitIdProvider.notifier).state = null;
-                  ref.invalidate(dashboardProvider);
-                  Navigator.pop(context);
-                },
-              ),
-              const Divider(color: Colors.white10, height: 1),
-              ...units.map((unit) {
-                final isSelected = ref.read(selectedUnitIdProvider) == unit['id'];
-                return ListTile(
-                  leading: const Icon(Icons.store_outlined, color: Colors.blueAccent),
-                  title: Text(unit['name'] as String? ?? 'Unidade'),
-                  trailing: isSelected ? const Icon(Icons.check, color: Colors.green) : null,
-                  onTap: () {
-                    ref.read(selectedUnitIdProvider.notifier).state = unit['id'] as String;
-                    ref.invalidate(dashboardProvider);
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }

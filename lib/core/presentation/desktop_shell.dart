@@ -8,6 +8,9 @@ import '../../../features/reports/presentation/financial_screen.dart';
 import '../../../features/team/presentation/employees_screen.dart';
 import '../../../features/units/presentation/units_list_screen.dart';
 import '../../../features/settings/menu_screen.dart';
+import '../../../features/salon/presentation/salon_screen.dart';
+import '../../../features/premium/presentation/premium_space_screen.dart';
+import '../rbac/app_permissions.dart';
 
 class DesktopShell extends ConsumerStatefulWidget {
   const DesktopShell({super.key});
@@ -20,19 +23,23 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   int _selectedIndex = 0;
   bool _isRailExpanded = true;
 
-  final List<_NavItem> _navItems = const [
+  final List<_NavItem> _allNavItems = const [
     _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Visão Geral'),
     _NavItem(icon: Icons.calendar_today_outlined, activeIcon: Icons.calendar_today, label: 'Agenda'),
     _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'Clientes'),
+    _NavItem(icon: Icons.face_retouching_natural, activeIcon: Icons.face_retouching_natural, label: 'Salão'),
+    _NavItem(icon: Icons.workspace_premium_outlined, activeIcon: Icons.workspace_premium, label: 'Premium'),
     _NavItem(icon: Icons.attach_money_outlined, activeIcon: Icons.attach_money, label: 'Financeiro'),
     _NavItem(icon: Icons.group_outlined, activeIcon: Icons.group, label: 'Equipe'),
     _NavItem(icon: Icons.business_outlined, activeIcon: Icons.business, label: 'Unidades'),
   ];
 
-  final List<Widget> _screens = const [
+  final List<Widget> _allScreens = const [
     LeaderOverviewScreen(),
     ScheduleAgendaScreen(),
     ClientsScreen(),
+    SalonScreen(),
+    PremiumSpaceScreen(),
     FinancialScreen(),
     EmployeesScreen(),
     UnitsListScreen(),
@@ -46,6 +53,32 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('Erro: $e'))),
       data: (user) {
+        final perm = AppPermissions(user);
+
+        // Filtrar itens de navegação baseados em permissão
+        final List<_NavItem> visibleNavItems = [];
+        final List<Widget> visibleScreens = [];
+
+        // Itens comuns do Desktop (Dono)
+        visibleNavItems.add(_allNavItems[0]); visibleScreens.add(_allScreens[0]); // Visão Geral
+        visibleNavItems.add(_allNavItems[1]); visibleScreens.add(_allScreens[1]); // Agenda
+        visibleNavItems.add(_allNavItems[2]); visibleScreens.add(_allScreens[2]); // Clientes
+
+        if (perm.canAccessSalon) {
+          visibleNavItems.add(_allNavItems[3]); visibleScreens.add(_allScreens[3]);
+        }
+        if (perm.canAccessPremium) {
+          visibleNavItems.add(_allNavItems[4]); visibleScreens.add(_allScreens[4]);
+        }
+        if (perm.canAccessFinancial) {
+          visibleNavItems.add(_allNavItems[5]); visibleScreens.add(_allScreens[5]);
+        }
+        if (perm.canManageTeam) {
+          visibleNavItems.add(_allNavItems[6]); visibleScreens.add(_allScreens[6]);
+        }
+        if (perm.canManageUnits) {
+          visibleNavItems.add(_allNavItems[7]); visibleScreens.add(_allScreens[7]);
+        }
         return Scaffold(
           body: Row(
             children: [
@@ -94,9 +127,9 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          itemCount: _navItems.length,
+                          itemCount: visibleNavItems.length,
                           itemBuilder: (context, index) {
-                            final item = _navItems[index];
+                            final item = visibleNavItems[index];
                             final isSelected = _selectedIndex == index;
                             return _buildNavItem(item, index, isSelected);
                           },
@@ -143,7 +176,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                   color: const Color(0xFF121212),
                   child: IndexedStack(
                     index: _selectedIndex,
-                    children: _screens,
+                    children: visibleScreens,
                   ),
                 ),
               ),

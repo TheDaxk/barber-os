@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/supabase/providers.dart';
 import 'providers/clients_provider.dart';
 import 'presentation/client_detail_screen.dart';
+import '../../core/rbac/app_permissions.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -32,18 +33,75 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     );
   }
 
+  // ============================================================
+  // TODO(P-04): Quando o provider real do Pedro estiver disponível,
+  // substituir o `daysSinceVisit` mock (calculado com hashCode abaixo)
+  // por: final days = inactivityData[client['id']] as int?;
+  // e remover a lógica de hashCode.
+  // ============================================================
+  Widget? _buildInactivityBadge(Map<String, dynamic> client) {
+    // Mock: usa hashCode do id para simular uma variedade de cenários
+    final idHash = (client['id'] as String? ?? '').hashCode.abs();
+    final daysSinceVisit = idHash % 45; // distribui entre 0 e 44 dias
+
+    Color? badgeColor;
+    String? badgeLabel;
+    IconData? badgeIcon;
+
+    if (daysSinceVisit >= 30) {
+      badgeColor = Colors.redAccent;
+      badgeLabel = '${daysSinceVisit}d sem visita';
+      badgeIcon = Icons.warning_amber_rounded;
+    } else if (daysSinceVisit >= 15) {
+      badgeColor = Colors.orangeAccent;
+      badgeLabel = '${daysSinceVisit}d sem visita';
+      badgeIcon = Icons.schedule;
+    } else if (daysSinceVisit >= 8) {
+      badgeColor = const Color(0xFFFFCA28); // amarelo
+      badgeLabel = '${daysSinceVisit}d sem visita';
+      badgeIcon = Icons.access_time;
+    } else {
+      return null; // sem badge para clientes recentes
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(badgeIcon, size: 11, color: badgeColor),
+          const SizedBox(width: 4),
+          Text(
+            badgeLabel,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: badgeColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final clientsAsync = ref.watch(clientsProvider);
     final userProfileAsync = ref.watch(userProfileProvider); // RBAC Permissões
 
     // Fallback permissão carregando
-    final isLeader = userProfileAsync.maybeWhen(
-      data: (user) => user['category'] == 'Barbeiro Líder' || user['role'] == 'admin',
-      orElse: () => false,
+    final perm = userProfileAsync.maybeWhen(
+      data: (user) => AppPermissions(user),
+      orElse: () => AppPermissions({}),
     );
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -96,7 +154,6 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                           separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.white10),
                           itemBuilder: (context, index) {
                             final client = filteredClients[index];
-                            final phone = client['phone'] != null && client['phone'].toString().isNotEmpty ? client['phone'] : 'Sem telefone';
                             final initial = client['name'].toString().isNotEmpty ? client['name'].toString()[0].toUpperCase() : '?';
                             
                             // IDENTIFICADOR PREMIUM
@@ -130,29 +187,45 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const SizedBox(height: 4),
-                                  // Só exibe telefone se for Barbeiro Líder ou admin
-                                  if (isLeader)
-                                    Text(phone as String)
-                                  else
-                                    Text(
-                                      '••••••••••',
-                                      style: TextStyle(color: Colors.grey[600], letterSpacing: 2),
-                                    ),
-                                  if (subscriptionPlan != null) ...[
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isPremium ? Colors.amber.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: isPremium ? Colors.amber.withValues(alpha: 0.5) : Colors.blue.withValues(alpha: 0.5)),
+                                  // Só o Líder vê o telefone real após o cadastro
+                                  Builder(
+                                    builder: (context) {
+                                      final rawPhone = client['phone']?.toString() ?? '';
+                                      final displayPhone = rawPhone.isNotEmpty
+                                          ? (perm.canViewClientPhone ? rawPhone : '••• •••• ••••')
+                                          : 'Sem telefone';
+                                      return Text(displayPhone);
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      if (subscriptionPlan != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: isPremium ? Colors.amber.withValues(alpha: 0.2) : Colors.blue.withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: isPremium ? Colors.amber.withValues(alpha: 0.5) : Colors.blue.withValues(alpha: 0.5)),
+                                          ),
+                                          child: Text(
+                                            isPremium ? '👑 Premium' : '⭐ Básico',
+                                            style: TextStyle(color: isPremium ? Colors.amber : Colors.blue, fontSize: 10, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      
+                                      // Badge de inatividade
+                                      Builder(
+                                        builder: (context) {
+                                          final badge = _buildInactivityBadge(client);
+                                          return badge ?? const SizedBox.shrink();
+                                        },
                                       ),
-                                      child: Text(
-                                        isPremium ? '👑 Premium' : '⭐ Básico',
-                                        style: TextStyle(color: isPremium ? Colors.amber : Colors.blue, fontSize: 10, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                   if (createdByName != null && createdByName.isNotEmpty) ...[
                                     const SizedBox(height: 4),
                                     Row(
@@ -172,17 +245,17 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                                 ],
                               ),
                               // Só mostra icone de edição e permite toque se for o Leader
-                              trailing: isLeader
+                              trailing: perm.canEditClients
                                   ? const Icon(Icons.edit_outlined, color: Colors.grey, size: 20)
                                   : const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
                               onTap: () {
-                                if (isLeader) {
+                                if (perm.canEditClients) {
                                   _showClientBottomSheet(client: client);
                                 } else {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ClientDetailScreen(client: client),
+                                    MaterialPageRoute<void>(
+                                      builder: (context) => ClientDetailScreen(client: client),
                                     ),
                                   );
                                 }

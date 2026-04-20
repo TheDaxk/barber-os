@@ -16,6 +16,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
   
   bool _isComboMode = false; // NOVO: Controla a Aba (Serviço vs Combo)
   int _selectedDuration = 30; 
+  String _selectedSector = 'barbearia'; // NOVO: Setor padrão
   bool _isLoading = false;
 
   // Para o modo Combo
@@ -80,6 +81,7 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
         'price': price,
         'duration_minutes': finalDuration,
         'is_combo': _isComboMode,
+        'sector': _selectedSector, // NOVO: Salva o setor
         'is_active': true,
       });
 
@@ -171,6 +173,20 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // SELETOR DE SETOR
+                  const Text('Destino (Setor):', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildSectorChip('barbearia', 'Barbearia', Icons.content_cut),
+                      const SizedBox(width: 8),
+                      _buildSectorChip('salao', 'Salão', Icons.spa),
+                      const SizedBox(width: 8),
+                      _buildSectorChip('premium', 'Premium', Icons.star),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -343,6 +359,30 @@ class _CreateServiceScreenState extends ConsumerState<CreateServiceScreen> {
             ),
             const SizedBox(height: 80),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectorChip(String value, String label, IconData icon) {
+    final isSelected = _selectedSector == value;
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _selectedSector = value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blueAccent.withValues(alpha: 0.2) : Colors.grey[800],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: isSelected ? Colors.blueAccent : Colors.white10),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 18, color: isSelected ? Colors.blueAccent : Colors.grey),
+              const SizedBox(height: 4),
+              Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            ],
+          ),
         ),
       ),
     );

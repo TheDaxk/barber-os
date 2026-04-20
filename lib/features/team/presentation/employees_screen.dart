@@ -8,6 +8,7 @@ import '../providers/employees_provider.dart';
 import '../../../core/providers/selected_unit_provider.dart';
 import '../../units/providers/units_provider.dart';
 import 'employee_details_screen.dart';
+import '../../../core/rbac/app_permissions.dart';
 
 class EmployeesScreen extends ConsumerStatefulWidget {
   const EmployeesScreen({super.key});
@@ -34,13 +35,20 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
     );
     
     String selectedCategory = isEditing ? (employee['category'] as String? ?? 'Barbeiro') : 'Barbeiro';
+    String selectedSector = isEditing ? (employee['sector'] as String? ?? 'barbearia') : 'barbearia';
     bool isSaving = false;
 
     final categories = [
-      {'id': 'Barbeiro Líder', 'label': 'Barbeiro Líder', 'icon': Icons.workspace_premium},
-      {'id': 'Barbeiro Pro Max', 'label': 'Barbeiro Pro Max', 'icon': Icons.star},
-      {'id': 'Barbeiro Pro', 'label': 'Barbeiro Pro', 'icon': Icons.star_border},
-      {'id': 'Barbeiro', 'label': 'Barbeiro', 'icon': Icons.content_cut},
+      // Setor Barbearia
+      {'id': AppRoles.barbeiroLider,   'label': 'Barbeiro Líder',       'icon': Icons.workspace_premium, 'sector': 'barbearia'},
+      {'id': AppRoles.barbeiroProMax,  'label': 'Barbeiro Pro Max',     'icon': Icons.star,               'sector': 'barbearia'},
+      {'id': AppRoles.barbeiroPro,     'label': 'Barbeiro Pro',         'icon': Icons.star_border,        'sector': 'barbearia'},
+      {'id': AppRoles.barbeiro,        'label': 'Barbeiro',             'icon': Icons.content_cut,        'sector': 'barbearia'},
+      // Setor Salão
+      {'id': AppRoles.cabelereiraLider,  'label': 'Cabeleireira Líder',   'icon': Icons.workspace_premium,      'sector': 'salao'},
+      {'id': AppRoles.cabelereiraProMax, 'label': 'Cabeleireira Pro Max',  'icon': Icons.face_retouching_natural, 'sector': 'salao'},
+      {'id': AppRoles.cabeleireiraPro,   'label': 'Cabeleireira Pro',      'icon': Icons.face_retouching_natural, 'sector': 'salao'},
+      {'id': AppRoles.cabeleireira,      'label': 'Cabeleireira',          'icon': Icons.face_retouching_natural, 'sector': 'salao'},
     ];
 
     showModalBottomSheet<void>(
@@ -148,6 +156,39 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    Text('Setor de Atuação', style: TextStyle(color: Colors.grey[400], fontSize: 13, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        {'id': 'barbearia', 'label': 'Barbearia', 'icon': Icons.content_cut, 'color': Colors.blueAccent},
+                        {'id': 'salao', 'label': 'Salão', 'icon': Icons.face_retouching_natural, 'color': const Color(0xFFEC407A)},
+                        {'id': 'premium', 'label': 'Premium', 'icon': Icons.workspace_premium, 'color': const Color(0xFFD4AF37)},
+                      ].map((sec) {
+                        final id = sec['id'] as String;
+                        final isSelected = selectedSector == id;
+                        final color = sec['color'] as Color;
+                        return ChoiceChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(sec['icon'] as IconData, size: 16, color: isSelected ? Colors.white : color),
+                              const SizedBox(width: 4),
+                              Text(sec['label'] as String, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.grey[300])),
+                            ],
+                          ),
+                          selected: isSelected,
+                          selectedColor: color,
+                          backgroundColor: Colors.grey[800],
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          showCheckmark: false,
+                          onSelected: (_) => setStateSheet(() => selectedSector = id),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+
                     TextField(
                       controller: commissionController,
                       keyboardType: TextInputType.number,
@@ -222,6 +263,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                                     'category': selectedCategory,
                                     'commission_rate': commission,
                                     'unit_id': selectedUnitIdForEdit,
+                                    'sector': selectedSector,
                                   }).eq('id', employee['id'] as Object);
 
                                   // Tentar atualizar telefone no users (Pode falhar se RLS bloquear update no auth, mas como é via banco, funciona se admin tiver acesso)
@@ -279,6 +321,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                                     'category': selectedCategory,
                                     'commission_rate': commission,
                                     'unit_name': unitController.text.trim(),
+                                    'sector': selectedSector,
                                   });
 
                                   ref.invalidate(employeesProvider);
@@ -321,6 +364,59 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
       fillColor: Colors.grey[800],
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       labelStyle: TextStyle(color: Colors.grey[400]),
+    );
+  }
+
+  // ============================================================
+  // TODO(P-06): quando a coluna `sector` existir na tabela barbers,
+  // remover o parâmetro `sectorMock` daqui e usar:
+  //   final sector = emp['sector'] as String? ?? 'barbearia';
+  // e passar `sector` diretamente para este método.
+  // ============================================================
+  Widget _buildSectorChip(String sector) {
+    final Map<String, Map<String, dynamic>> sectorConfig = {
+      'barbearia': {
+        'label': 'Barbearia',
+        'color': Colors.blueAccent,
+        'icon': Icons.content_cut,
+      },
+      'salao': {
+        'label': 'Salão',
+        'color': const Color(0xFFEC407A),
+        'icon': Icons.face_retouching_natural,
+      },
+      'premium': {
+        'label': 'Premium',
+        'color': const Color(0xFFD4AF37),
+        'icon': Icons.workspace_premium,
+      },
+    };
+
+    final config = sectorConfig[sector] ?? sectorConfig['barbearia']!;
+    final color = config['color'] as Color;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(config['icon'] as IconData, size: 11, color: color),
+          const SizedBox(width: 4),
+          Text(
+            config['label'] as String,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -370,16 +466,41 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                 final category = emp['category'] ?? '';
                 final commission = (emp['commission_rate'] as num?)?.toStringAsFixed(0) ?? '40';
 
+                final sector = emp['sector'] as String? ?? 'barbearia';
+
                 return ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(color: Colors.white10),
+                  ),
                   tileColor: Colors.grey[900],
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
-                    child: const Icon(Icons.content_cut, color: Colors.blueAccent, size: 20),
+                    radius: 22,
+                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                    child: const Icon(Icons.person_outline, color: Colors.blueAccent, size: 24),
                   ),
-                  title: Text(userName as String, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('$category • $commission% comissão', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          userName.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildSectorChip(sector),
+                    ],
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '$category • $commission% comissão',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    ),
+                  ),
                   trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
                   onTap: () {
                     // Vai para a TELA DE DETALHES em vez do BottomSheet de edição

@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/schedule_lock_provider.dart';
-import '../../clients/providers/clients_provider.dart'; // NOVO: Import do provedor de clientes
+import '../../clients/providers/clients_provider.dart';
+import '../../../core/rbac/app_permissions.dart';
+import '../../../core/providers/selected_unit_provider.dart';
+import '../../units/providers/business_hours_provider.dart';
 
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
   /// Setor para filtrar serviços. null = exibe todos (padrão: barbearia)
@@ -43,13 +46,21 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     });
   }
 
-  List<String> _generateTimeSlots() {
+  List<String> _generateTimeSlots({int startHour = 9, int endHour = 19}) {
     List<String> slots = [];
-    for (int h = 9; h <= 19; h++) {
+    for (int h = startHour; h <= endHour; h++) {
       slots.add('${h.toString().padLeft(2, '0')}:00');
-      slots.add('${h.toString().padLeft(2, '0')}:30');
+      if (h < endHour) {
+        slots.add('${h.toString().padLeft(2, '0')}:30');
+      }
     }
     return slots;
+  }
+
+  /// Converte o dia da semana (1=Monday) para o nome usado na tabela business_hours
+  String _dayOfWeekToName(int weekday) {
+    const days = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+    return days[weekday - 1];
   }
 
   String get _calculatedEndTime {
@@ -118,6 +129,10 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       final userId = supabase.auth.currentUser!.id;
       final userRes = await supabase.from('users').select('unit_id').eq('id', userId).single();
       
+      // Resolve a unidade ativa — prioriza seleção global
+      final selectedUnit = ref.read(selectedUnitIdProvider);
+      final unitId = selectedUnit ?? (userRes['unit_id'] as String);
+
       final startParts = _selectedTime!.split(':');
       final startDateTime = DateTime(
         _selectedDate.year, 
@@ -133,14 +148,14 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
       final finalClientName = _selectedClient != null ? _selectedClient!['name'] : (_clientController.text.isNotEmpty ? _clientController.text : 'Cliente Avulso');
 
       final userProfile = await ref.read(userProfileProvider.future);
-      final isLeader = userProfile['category'] == 'Barbeiro Líder' || userProfile['role'] == 'admin';
-      final String finalBarberId = isLeader
+      final perm = AppPermissions(userProfile);
+      final String finalBarberId = perm.canScheduleForOthers
           ? (_selectedBarber!['id'] as String)
           : (userProfile['barber_id'] as String? ?? '');
 
       // Inserir a ordem e obter o ID retornado
       final orderResponse = await supabase.from('orders').insert({
-        'unit_id': userRes['unit_id'],
+        'unit_id': unitId,
         'barber_id': finalBarberId,
         'client_id': _selectedClient?['id'], // Grava o ID oficial do cliente (se existir)
         'opened_by': userId,
@@ -207,9 +222,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     final userProfileAsync = ref.watch(userProfileProvider); // RBAC Permissões
     final lockStatusAsync = ref.watch(allBarbersLockStatusProvider);
 
-    final bool isLeader = userProfileAsync.maybeWhen(
-      data: (user) => user['category'] == 'Barbeiro Líder' || user['role'] == 'admin',
-      orElse: () => false,
+    final AppPermissions perm = userProfileAsync.maybeWhen(
+      data: (user) => AppPermissions(user),
+      orElse: () => AppPermissions({}),
     );
 
     final String? loggedInBarberId = userProfileAsync.maybeWhen(
@@ -218,7 +233,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     );
 
     // Se é líder, exige _selectedBarber. Se não, exige loggedInBarberId.
-    final String? effectiveBarberId = isLeader ? (_selectedBarber?['id'] as String?) : loggedInBarberId;
+    final String? effectiveBarberId = perm.canScheduleForOthers ? (_selectedBarber?['id'] as String?) : loggedInBarberId;
 
     final bookedSlots = (effectiveBarberId != null && appointmentsAsync.hasValue)
         ? _getBookedSlots(appointmentsAsync.value!, effectiveBarberId)
@@ -233,7 +248,41 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
         ? (lockStatus[effectiveBarberId] ?? false)
         : false;
 
-    final allSlots = _generateTimeSlots();
+    // Busca horário de funcionamento da unidade para o dia selecionado
+    final selectedUnit = ref.watch(selectedUnitIdProvider);
+    final unitIdForHours = selectedUnit ?? userProfileAsync.maybeWhen(
+      data: (user) => user['unit_id'] as String?,
+      orElse: () => null,
+    );
+    final businessHoursAsync = unitIdForHours != null
+        ? ref.watch(unitBusinessHoursProvider(unitIdForHours))
+        : null;
+
+    // Gera slots dinâmicos baseados no horário de funcionamento do dia
+    final dayName = _dayOfWeekToName(_selectedDate.weekday);
+    int startHour = 9;
+    int endHour = 19;
+    bool isDayClosed = false;
+
+    if (businessHoursAsync != null) {
+      businessHoursAsync.whenData((hours) {
+        final dayHour = hours.where((h) => h.day == dayName).firstOrNull;
+        if (dayHour != null) {
+          if (!dayHour.isOpen) {
+            isDayClosed = true;
+          } else {
+            if (dayHour.openTime != null) {
+              startHour = int.tryParse(dayHour.openTime!.split(':')[0]) ?? 9;
+            }
+            if (dayHour.closeTime != null) {
+              endHour = int.tryParse(dayHour.closeTime!.split(':')[0]) ?? 19;
+            }
+          }
+        }
+      });
+    }
+
+    final allSlots = isDayClosed ? <String>[] : _generateTimeSlots(startHour: startHour, endHour: endHour);
     final dateString = '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
 
     return Scaffold(
@@ -381,23 +430,36 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
             const SizedBox(height: 24),
 
             // 3. Profissional (Oculto se não for Líder)
-            if (isLeader) ...[
+            if (perm.canScheduleForOthers) ...[
               const Text('Profissional', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               barbersAsync.when(
                 loading: () => const CircularProgressIndicator(),
                 error: (err, stack) => Text('Erro: $err'),
-                data: (barbers) => Wrap(
-                  spacing: 12,
-                  children: barbers.map((barber) {
+                data: (barbers) => GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    mainAxisExtent: 110,
+                  ),
+                  itemCount: barbers.length,
+                  itemBuilder: (context, index) {
+                    final barber = barbers[index];
                     final isSelected = _selectedBarber?['id'] == barber['id'];
                     final barberName = (barber['name'] ?? barber['users']?['name'] ?? 'Sem Nome').toString();
-                    return ChoiceChip(
-                      label: Text(barberName), selected: isSelected,
-                      onSelected: (selected) => setState(() { _selectedBarber = selected ? barber : null; _selectedTime = null; }),
-                      selectedColor: Colors.white, labelStyle: TextStyle(color: isSelected ? Colors.black : Colors.white), backgroundColor: Colors.grey[800],
+                    
+                    return _BarberCard(
+                      name: barberName,
+                      isSelected: isSelected,
+                      onTap: () => setState(() {
+                        _selectedBarber = isSelected ? null : barber;
+                        _selectedTime = null;
+                      }),
                     );
-                  }).toList(),
+                  },
                 ),
               ),
               const SizedBox(height: 24),
@@ -418,9 +480,9 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.4)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
                   ),
                   child: const Row(
                     children: [
@@ -437,69 +499,71 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
                 ),
               ],
               Container(
-                height: 180, padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.grey[900], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[800]!)),
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 8, runSpacing: 8,
-                    children: allSlots.map((slot) {
-                      final isBooked = bookedSlots.contains(slot);
-                      final isLocked = isSelectedBarberLocked; // todos os slots ficam vermelhos
-                      final isSelected = _selectedTime == slot && !isLocked;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: InkWell(
-                          onTap: (isBooked || isLocked)
-                              ? null
-                              : () => setState(() => _selectedTime = slot),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900], 
+                  borderRadius: BorderRadius.circular(12), 
+                  border: Border.all(color: Colors.grey[800]!),
+                ),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 2.2,
+                  ),
+                  itemCount: allSlots.length,
+                  itemBuilder: (context, index) {
+                    final slot = allSlots[index];
+                    final isBooked = bookedSlots.contains(slot);
+                    final isLocked = isSelectedBarberLocked;
+                    final isSelected = _selectedTime == slot && !isLocked;
+
+                    return InkWell(
+                      onTap: (isBooked || isLocked)
+                          ? null
+                          : () => setState(() => _selectedTime = slot),
+                      borderRadius: BorderRadius.circular(8),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.green
+                              : isLocked
+                                  ? Colors.red.withValues(alpha: 0.1)
+                                  : isBooked
+                                      ? Colors.grey[850]
+                                      : Colors.grey[800],
                           borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 70,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Colors.green
-                                  : isLocked
-                                      ? Colors.red.withOpacity(0.2)
-                                      : isBooked
-                                          ? Colors.blue.withOpacity(0.2)
-                                          : Colors.grey[700],
-                              borderRadius: BorderRadius.circular(8),
-                              border: isSelected
-                                  ? Border.all(color: Colors.greenAccent, width: 2)
-                                  : isLocked
-                                      ? Border.all(color: Colors.red.withOpacity(0.5))
-                                      : isBooked
-                                          ? Border.all(color: Colors.blue.withOpacity(0.5))
-                                          : null,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  slot,
-                                  style: TextStyle(
-                                    color: isLocked
-                                        ? Colors.red[300]
-                                        : isBooked
-                                            ? Colors.blue[300]
-                                            : Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                if (isLocked)
-                                  const Text('❌', style: TextStyle(fontSize: 12))
-                                else if (isBooked)
-                                  const Text('✂️', style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
+                          border: Border.all(
+                            color: isSelected 
+                                ? Colors.greenAccent 
+                                : isLocked 
+                                    ? Colors.red.withValues(alpha: 0.3)
+                                    : Colors.white.withValues(alpha: 0.05),
+                            width: isSelected ? 2 : 1,
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
+                        child: Text(
+                          slot,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.black
+                                : isLocked
+                                    ? Colors.red[300]
+                                    : isBooked
+                                        ? Colors.white.withValues(alpha: 0.2)
+                                        : Colors.white,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
@@ -609,6 +673,77 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BarberCard extends StatelessWidget {
+  final String name;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _BarberCard({
+    required this.name,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.grey[900],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.white10,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: isSelected ? Colors.black12 : Colors.white10,
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: isSelected ? Colors.black : Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isSelected ? Colors.black : Colors.white70,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

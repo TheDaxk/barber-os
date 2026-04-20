@@ -4,6 +4,7 @@ import '../../../core/supabase/providers.dart';
 import '../providers/units_provider.dart';
 import 'unit_detail_screen.dart';
 import 'unit_form_screen.dart';
+import '../../../core/rbac/app_permissions.dart';
 
 class UnitsListScreen extends ConsumerWidget {
   const UnitsListScreen({super.key});
@@ -24,16 +25,19 @@ class UnitsListScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erro: $err', style: const TextStyle(color: Colors.red))),
         data: (userProfile) {
-          final isLeader = userProfile['category'] == 'Barbeiro Líder' || userProfile['role'] == 'admin';
+          final perm = AppPermissions(userProfile);
 
-          if (!isLeader) {
+          if (!perm.canManageUnits) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.lock, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  const Text('Acesso restrito ao Barbeiro Líder', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  const Text(
+                    'Acesso restrito ao Barbeiro Líder',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),

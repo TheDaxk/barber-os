@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
+import '../../../core/rbac/app_permissions.dart';
 
 // Provider que busca todas as unidades
 final unitsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
@@ -22,7 +23,16 @@ final unitBarbersProvider = FutureProvider.family.autoDispose<List<Map<String, d
 
   // Ordenar por hierarquia: Barbeiro Líder > Pro Max > Pro > Barbeiro
   barbers.sort((a, b) {
-    final order = {'Barbeiro Líder': 0, 'Barbeiro Pro Max': 1, 'Barbeiro Pro': 2, 'Barbeiro': 3};
+    final order = {
+      AppRoles.barbeiroLider: 0,
+      AppRoles.barbeiroProMax: 1,
+      AppRoles.barbeiroPro: 2,
+      AppRoles.barbeiro: 3,
+      AppRoles.cabelereiraLider: 0,
+      AppRoles.cabelereiraProMax: 1,
+      AppRoles.cabeleireiraPro: 2,
+      AppRoles.cabeleireira: 3,
+    };
     final aOrder = order[a['category']] ?? 99;
     final bOrder = order[b['category']] ?? 99;
     return aOrder.compareTo(bOrder);
@@ -42,7 +52,7 @@ final unitDetailProvider = FutureProvider.family.autoDispose<Map<String, dynamic
 final unitMetricsProvider = FutureProvider.family.autoDispose<Map<String, dynamic>, String>((ref, unitId) async {
   final supabase = ref.watch(supabaseProvider);
   final userProfile = await ref.watch(userProfileProvider.future);
-  final isLeader = userProfile['category'] == 'Barbeiro Líder' || userProfile['role'] == 'admin';
+  final perm = AppPermissions(userProfile);
 
   final now = DateTime.now();
   final startOfToday = DateTime(now.year, now.month, now.day).toIso8601String();
@@ -56,7 +66,7 @@ final unitMetricsProvider = FutureProvider.family.autoDispose<Map<String, dynami
     .lte('start_time', endOfToday)
     .neq('status', 'canceled');
 
-  if (!isLeader && userProfile['barber_id'] != null) {
+  if (!perm.isGlobalAdmin && userProfile['barber_id'] != null) {
     query = query.eq('barber_id', userProfile['barber_id'] as String);
   }
 
@@ -131,7 +141,7 @@ final unitMetricsProvider = FutureProvider.family.autoDispose<Map<String, dynami
 final unitOrdersProvider = FutureProvider.family.autoDispose<List<Map<String, dynamic>>, String>((ref, unitId) async {
   final supabase = ref.watch(supabaseProvider);
   final userProfile = await ref.watch(userProfileProvider.future);
-  final isLeader = userProfile['category'] == 'Barbeiro Líder' || userProfile['role'] == 'admin';
+  final perm = AppPermissions(userProfile);
 
   final now = DateTime.now();
   final startOfToday = DateTime(now.year, now.month, now.day).toIso8601String();
@@ -145,7 +155,7 @@ final unitOrdersProvider = FutureProvider.family.autoDispose<List<Map<String, dy
     .lte('start_time', endOfToday)
     .neq('status', 'canceled');
 
-  if (!isLeader && userProfile['barber_id'] != null) {
+  if (!perm.isGlobalAdmin && userProfile['barber_id'] != null) {
     query = query.eq('barber_id', userProfile['barber_id'] as String);
   }
 

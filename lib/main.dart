@@ -54,7 +54,7 @@ class _AuthGateState extends State<_AuthGate> {
 
   Future<void> _checkSession() async {
     // Pequeno delay para garantir que o Supabase terminou de restaurar a sessão
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
 
     if (!mounted) return;
 
@@ -63,12 +63,12 @@ class _AuthGateState extends State<_AuthGate> {
     if (session != null) {
       // Sessão válida → vai direto para o app
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
+        MaterialPageRoute<void>(builder: (_) => const MainNavigation()),
       );
     } else {
       // Sem sessão → vai para login
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
       );
     }
   }

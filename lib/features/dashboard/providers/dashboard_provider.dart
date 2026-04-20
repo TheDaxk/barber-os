@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
 import '../../../core/providers/selected_unit_provider.dart';
+import '../../../core/rbac/app_permissions.dart';
 
 final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final supabase = ref.watch(supabaseProvider);
@@ -22,18 +23,27 @@ final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref)
 
   // Vai buscar as permissões do utilizador
   final userProfile = await ref.watch(userProfileProvider.future);
-  final isLeader = userProfile['category'] == 'Barbeiro Líder' || userProfile['role'] == 'admin';
+  final perm = AppPermissions(userProfile);
 
   // Buscar agendamentos que comecem hoje (ativos e fechados)
   var query = supabase
       .from('orders')
       .select('id, start_time, client_name, status, total, barbers(id, commission_rate, users(name))')
-      .eq('unit_id', unitId)
       .gte('start_time', startOfToday)
       .lte('start_time', endOfToday)
-      .neq('status', 'canceled'); // Ignora os cancelados
+      .neq('status', 'canceled');
 
-  if (!isLeader && userProfile['barber_id'] != null) {
+  // Adiciona filtro de unidade Apenas se uma unidade específica estiver selecionada
+  // Se selectedUnit for null (Todas as Unidades), não filtra por unit_id (mostra tudo)
+  if (selectedUnit != null) {
+    query = query.eq('unit_id', selectedUnit);
+  } else if (!perm.isGlobalAdmin) {
+    // Se não for admin e estiver em "Todas as Unidades", 
+    // forçamos a unidade padrão do usuário por segurança
+    query = query.eq('unit_id', unitId);
+  }
+
+  if (!perm.isGlobalAdmin && userProfile['barber_id'] != null) {
     // Filtro cirúrgico: mostra APENAS os lucros/comissões/agendamentos DESTE barbeiro
     query = query.eq('barber_id', userProfile['barber_id'] as Object);
   }

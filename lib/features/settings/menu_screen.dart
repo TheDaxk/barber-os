@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/supabase/providers.dart';
+import '../../core/rbac/app_permissions.dart';
 import '../services/create_service_screen.dart';
 import '../team/presentation/employees_screen.dart';
 import '../auth/presentation/login_screen.dart'; // Import do Login para o Logout
 import '../products/presentation/products_management_screen.dart';
 import 'edit_profile_screen.dart';
 import 'unit_settings_screen.dart';
+import '../units/presentation/units_list_screen.dart';
+import '../salon/presentation/salon_screen.dart';
+import '../premium/presentation/premium_space_screen.dart';
 
 // userProfileProvider movido para ../../core/supabase/providers.dart
 
@@ -32,7 +36,7 @@ class MenuScreen extends ConsumerWidget {
           final String name = user['name']?.toString() ?? 'Usuário';
           final String initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
           final String category = user['category']?.toString() ?? 'Gestor';
-          final isLeader = category == 'Barbeiro Líder' || user['role'] == 'admin';
+          final perm = AppPermissions(user);
           
           return ListView(
             padding: const EdgeInsets.all(16.0),
@@ -68,7 +72,7 @@ class MenuScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            category,
+                            '${AppPermissions.roleIcon(category)} $category',
                             style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                           ),
                         ],
@@ -92,7 +96,7 @@ class MenuScreen extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
-              if (isLeader) ...[
+              if (perm.isGlobalAdmin) ...[
                 // ===============================
                 // SESSÃO DE CONFIGURAÇÕES GERAIS
                 // ===============================
@@ -135,14 +139,50 @@ class MenuScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // Seção: Configurações da Barbearia
-                const Text('Unidade', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                // Seção: Análise por Setor
+                const Text('Análise por Setor', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.spa_outlined,
+                  title: 'Área Salão',
+                  subtitle: 'Análise de atendimentos e serviços femininos',
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const SalonScreen()));
+                  },
+                ),
+                const SizedBox(height: 8),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.stars_outlined,
+                  title: 'Espaço Premium',
+                  subtitle: 'Métricas exclusivas do setor de luxo',
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const PremiumSpaceScreen()));
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+
+                // Seção: Configurações do Negócio
+                const Text('Gestão do Negócio', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 8),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.business_outlined,
+                  title: 'Minhas Unidades',
+                  subtitle: 'Gerencie e cadastre novas unidades',
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const UnitsListScreen()));
+                  },
+                ),
                 const SizedBox(height: 8),
                 _buildMenuCard(
                   context,
                   icon: Icons.store_outlined,
-                  title: 'Horário de Funcionamento',
-                  subtitle: 'Defina os horários de abertura e fechamento',
+                  title: 'Configurações da Unidade',
+                  subtitle: 'Horários de funcionamento e dados da loja',
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute<void>(builder: (context) => const UnitSettingsScreen()));
                   },
