@@ -21,6 +21,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _extraValueController = TextEditingController();
 
   List<Map<String, dynamic>> _orderItems = [];
+  double _baseTotal = 0.0;
   double _subtotal = 0.0;
   double _discount = 0.0;
   String? _selectedPaymentMethod;
@@ -37,7 +38,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _subtotal = (widget.appointment['total'] as num?)?.toDouble() ?? 0.0;
+    _baseTotal = (widget.appointment['total'] as num?)?.toDouble() ?? 0.0;
+    _subtotal = _baseTotal;
     _discountController.addListener(_calculateDiscount);
     _loadOrderItems();
   }
@@ -59,9 +61,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _calculateSubtotal() {
+    // Verifica se existem itens do tipo 'service' nos order_items
+    final hasServiceItems = _orderItems.any((item) => item['item_type'] == 'service');
+
     double total = 0.0;
-    for (var item in _orderItems) {
-      total += (item['unit_price'] as num).toDouble() * (item['quantity'] as num).toInt();
+    if (hasServiceItems) {
+      // Se os serviços estão nos order_items, soma tudo normalmente
+      for (var item in _orderItems) {
+        total += (item['unit_price'] as num).toDouble() * (item['quantity'] as num).toInt();
+      }
+    } else {
+      // Se os serviços NÃO estão nos order_items (dados antigos ou falha na inserção),
+      // preserva o total base do agendamento e soma apenas extras/produtos
+      total = _baseTotal;
+      for (var item in _orderItems) {
+        total += (item['unit_price'] as num).toDouble() * (item['quantity'] as num).toInt();
+      }
     }
     setState(() {
       _subtotal = total;
