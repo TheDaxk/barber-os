@@ -88,8 +88,8 @@ class ExportService {
 
     // Filtrar dados pelo período selecionado
     final filteredOrders = orders.where((o) {
-      if (o['start_time'] == null) return false;
-      final dt = DateTime.parse(o['start_time'].toString()).toLocal();
+      if (o['closed_at'] == null) return false;
+      final dt = DateTime.parse(o['closed_at'].toString()).toLocal();
       return dt.isAfter(range.start.subtract(const Duration(seconds: 1))) &&
              dt.isBefore(range.end.add(const Duration(days: 1)));
     }).toList();
@@ -217,7 +217,7 @@ class ExportService {
           children: headers.map((h) => pw.Padding(padding: const pw.EdgeInsets.all(5), child: pw.Text(h, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)))).toList(),
         ),
         ...orders.map((o) {
-          final startTime = o['start_time']?.toString();
+          final startTime = o['closed_at']?.toString();
           final dateStr = startTime != null 
               ? '${DateTime.parse(startTime).toLocal().day.toString().padLeft(2,'0')}/${DateTime.parse(startTime).toLocal().month.toString().padLeft(2,'0')}'
               : '--/--';

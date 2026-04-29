@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../financial_provider.dart';
+import 'package:barber_os/core/supabase/providers.dart';
+import 'package:barber_os/core/providers/selected_unit_provider.dart';
 import '../export_service.dart';
 
 class FinancialExportSheet extends ConsumerStatefulWidget {
@@ -185,17 +186,7 @@ class _FinancialExportSheetState extends ConsumerState<FinancialExportSheet> {
   }
 
   Future<void> _generateExport() async {
-    final revenueAsync = ref.read(monthlyRevenueProvider);
-    final expensesAsync = ref.read(monthlyExpensesProvider);
-
-    if (!revenueAsync.hasValue || !expensesAsync.hasValue) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Carregue os dados primeiro'), backgroundColor: Colors.orange),
-        );
-      }
-      return;
-    }
+    final range = ExportService.resolvePeriod(selectedPeriod, customRange);
 
     try {
       if (mounted) {
@@ -204,9 +195,45 @@ class _FinancialExportSheetState extends ConsumerState<FinancialExportSheet> {
         );
       }
 
-      final range = ExportService.resolvePeriod(selectedPeriod, customRange);
-      final orders = revenueAsync.value!;
-      final expenses = expensesAsync.value!;
+      final supabase = ref.read(supabaseProvider);
+      final selectedUnit = ref.read(selectedUnitIdProvider);
+
+      // Resolver unit_id
+      String unitId;
+      if (selectedUnit != null) {
+        unitId = selectedUnit;
+      } else {
+        final userId = supabase.auth.currentUser!.id;
+        final userRes = await supabase.from('users').select('unit_id').eq('id', userId).single();
+        unitId = (userRes['unit_id'] as String?) ?? '';
+      }
+
+      // Buscar pedidos diretamente com o período selecionado
+      final startIso = range.start.toIso8601String();
+      final endIso = range.end.add(const Duration(hours: 23, minutes: 59, seconds: 59)).toIso8601String();
+
+      final ordersResponse = await supabase
+          .from('orders')
+          .select('id, total, closed_at, client_name, payment_method, barbers(id, commission_rate, users(name)), order_items(commission_value)')
+          .eq('unit_id', unitId)
+          .eq('status', 'closed')
+          .gte('closed_at', startIso)
+          .lte('closed_at', endIso);
+
+      // Buscar despesas com o período selecionado
+      final startDate = '${range.start.year}-${range.start.month.toString().padLeft(2, '0')}-${range.start.day.toString().padLeft(2, '0')}';
+      final endDate = '${range.end.year}-${range.end.month.toString().padLeft(2, '0')}-${range.end.day.toString().padLeft(2, '0')}';
+
+      final expensesResponse = await supabase
+          .from('expenses')
+          .select('id, category, description, amount, expense_date')
+          .eq('unit_id', unitId)
+          .gte('expense_date', startDate)
+          .lte('expense_date', endDate)
+          .order('expense_date', ascending: false);
+
+      final orders = (ordersResponse as List).cast<Map<String, dynamic>>();
+      final expenses = (expensesResponse as List).cast<Map<String, dynamic>>();
 
       await ExportService.exportTo(
         type: selectedFormat,
