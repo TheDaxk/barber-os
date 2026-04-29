@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../main.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../core/supabase/providers.dart';
 import '../providers/employees_provider.dart';
 import '../../../core/providers/selected_unit_provider.dart';
@@ -288,9 +288,11 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                                   final unitId = userRes['unit_id'];
 
                                   // Criação "limpa" via REST para evitar deslogar o gestor
+                                  final url = dotenv.env['SUPABASE_URL']!;
+                                  final key = dotenv.env['SUPABASE_ANON_KEY']!;
                                   final authRes = await http.post(
-                                    Uri.parse('$supabaseUrl/auth/v1/signup'),
-                                    headers: {'apikey': supabaseAnonKey, 'Content-Type': 'application/json'},
+                                    Uri.parse('$url/auth/v1/signup'),
+                                    headers: {'apikey': key, 'Content-Type': 'application/json'},
                                     body: jsonEncode({
                                       'email': emailController.text.trim(),
                                       'password': passwordController.text,
