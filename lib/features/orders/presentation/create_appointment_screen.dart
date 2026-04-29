@@ -11,8 +11,17 @@ import '../../units/providers/business_hours_provider.dart';
 class CreateAppointmentScreen extends ConsumerStatefulWidget {
   /// Setor para filtrar serviços. null = exibe todos (padrão: barbearia)
   final String? sector;
+  final Map<String, dynamic>? initialBarber;
+  final String? initialTime;
+  final DateTime? initialDate;
 
-  const CreateAppointmentScreen({super.key, this.sector});
+  const CreateAppointmentScreen({
+    super.key, 
+    this.sector,
+    this.initialBarber,
+    this.initialTime,
+    this.initialDate,
+  });
 
   @override
   ConsumerState<CreateAppointmentScreen> createState() => _CreateAppointmentScreenState();
@@ -22,7 +31,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   final _clientController = TextEditingController();
   Map<String, dynamic>? _selectedClient; // NOVO: Guarda o cliente selecionado do Autocomplete
   
-  DateTime _selectedDate = DateTime.now(); 
+  late DateTime _selectedDate; 
   Map<String, dynamic>? _selectedBarber; 
   String? _selectedTime; 
   final Set<String> _selectedServiceIds = {};
@@ -30,6 +39,14 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
   double _totalPrice = 0.0;
   int _totalDuration = 0;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.initialDate ?? DateTime.now();
+    _selectedBarber = widget.initialBarber;
+    _selectedTime = widget.initialTime;
+  }
 
   void _calculateTotals(List<Map<String, dynamic>> allServices) {
     double price = 0;

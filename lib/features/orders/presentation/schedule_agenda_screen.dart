@@ -6,6 +6,7 @@ import '../../../core/presentation/widgets/page_header.dart';
 import '../providers/appointments_provider.dart';
 import '../providers/schedule_lock_provider.dart';
 import '../../units/providers/business_hours_provider.dart';
+import '../../../core/rbac/app_permissions.dart';
 import 'create_appointment_screen.dart';
 import 'checkout_screen.dart';
 
@@ -56,35 +57,41 @@ class _ScheduleAgendaScreenState extends ConsumerState<ScheduleAgendaScreen> {
   }
 
   // Retorna o agendamento que ocupa esse slot (se houver)
-  Map<String, dynamic>? _appointmentAtSlot(
+  Map<String, dynamic> _getSlotData(
     String slot,
     List<Map<String, dynamic>> appointments,
   ) {
     final parts = slot.split(':');
     final slotMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
 
+    List<Map<String, dynamic>> starting = [];
+    Set<String> blockedBarberIds = {};
+
     for (final appt in appointments) {
       if (appt['status'] == 'canceled') continue;
       final start = DateTime.parse(appt['start_time'] as String).toLocal();
       final end = DateTime.parse(appt['end_time'] as String).toLocal();
 
-      // Só considera o dia selecionado
       if (start.year != _selectedDate.year ||
           start.month != _selectedDate.month ||
           start.day != _selectedDate.day) { continue; }
 
       final startMins = start.hour * 60 + start.minute;
       final endMins = end.hour * 60 + end.minute;
+      
+      final barberId = appt['barbers']?['id']?.toString();
 
-      // Mostra o card somente no slot de início do agendamento
-      if (slotMinutes == startMins) return appt;
-
-      // Slots cobertos (mas não o inicial) são "bloqueados" — retorna sentinela
-      if (slotMinutes > startMins && slotMinutes < endMins) {
-        return {'__blocked': true};
+      if (slotMinutes == startMins) {
+        starting.add(appt);
+        if (barberId != null) blockedBarberIds.add(barberId);
+      } else if (slotMinutes > startMins && slotMinutes < endMins) {
+        if (barberId != null) blockedBarberIds.add(barberId);
       }
     }
-    return null;
+    return {
+      'starting': starting,
+      'blockedBarberIds': blockedBarberIds,
+    };
   }
 
   @override
@@ -93,6 +100,12 @@ class _ScheduleAgendaScreenState extends ConsumerState<ScheduleAgendaScreen> {
     final selectedUnit = ref.watch(selectedUnitIdProvider);
     final userProfileAsync = ref.watch(userProfileProvider);
     final lockStatusAsync = ref.watch(allBarbersLockStatusProvider);
+    final barbersAsync = ref.watch(barbersProvider);
+
+    final AppPermissions perm = userProfileAsync.maybeWhen(
+      data: (user) => AppPermissions(user),
+      orElse: () => AppPermissions({}),
+    );
 
     final unitIdForHours = selectedUnit ??
         userProfileAsync.maybeWhen(
@@ -241,28 +254,79 @@ class _ScheduleAgendaScreenState extends ConsumerState<ScheduleAgendaScreen> {
                         itemCount: allSlots.length,
                         itemBuilder: (context, index) {
                           final slot = allSlots[index];
-                          final appt = _appointmentAtSlot(slot, appointments);
+                          final slotData = _getSlotData(slot, appointments);
+                          final startingAppts = slotData['starting'] as List<Map<String, dynamic>>;
+                          final blockedBarberIds = slotData['blockedBarberIds'] as Set<String>;
 
-                          // Slot bloqueado (coberto por um agendamento que começou antes)
-                          if (appt != null && appt['__blocked'] == true) {
-                            return const SizedBox.shrink();
+                          List<Widget> blockWidgets = [];
+
+                          for (final appt in startingAppts) {
+                            blockWidgets.add(
+                              _SlotTile(
+                                time: blockWidgets.isEmpty ? slot : '',
+                                appointment: appt,
+                                isAgendaLocked: isAgendaLocked,
+                                onTapAvailable: () {},
+                                onTapAppointment: () => _showActionSheet(context, appt),
+                              )
+                            );
                           }
 
-                          return _SlotTile(
-                            time: slot,
-                            appointment: appt,
-                            isAgendaLocked: isAgendaLocked,
-                            onTapAvailable: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => const CreateAppointmentScreen(),
-                                ),
+                          if (perm.canScheduleForOthers) {
+                            if (barbersAsync.hasValue) {
+                              final barbers = barbersAsync.value!;
+                              final availableBarbers = barbers.where((b) => !blockedBarberIds.contains(b['id'].toString())).toList();
+                              
+                              if (availableBarbers.isNotEmpty) {
+                                blockWidgets.add(
+                                  _FastTrackAvailableTile(
+                                    time: blockWidgets.isEmpty ? slot : '',
+                                    availableBarbers: availableBarbers,
+                                    onBarberSelected: (barber) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => CreateAppointmentScreen(
+                                            initialBarber: barber,
+                                            initialTime: slot,
+                                            initialDate: _selectedDate,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                );
+                              }
+                            }
+                          } else {
+                            if (startingAppts.isEmpty && blockedBarberIds.isEmpty) {
+                              blockWidgets.add(
+                                _SlotTile(
+                                  time: blockWidgets.isEmpty ? slot : '',
+                                  appointment: null,
+                                  isAgendaLocked: isAgendaLocked,
+                                  onTapAvailable: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => CreateAppointmentScreen(
+                                          initialTime: slot,
+                                          initialDate: _selectedDate,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  onTapAppointment: () {},
+                                )
                               );
-                            },
-                            onTapAppointment: () {
-                              if (appt != null) _showActionSheet(context, appt);
-                            },
+                            }
+                          }
+
+                          if (blockWidgets.isEmpty) return const SizedBox.shrink();
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: blockWidgets,
                           );
                         },
                       ),
@@ -662,6 +726,120 @@ class _AvailableSlotContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _FastTrackAvailableTile extends StatelessWidget {
+  final String time;
+  final List<Map<String, dynamic>> availableBarbers;
+  final void Function(Map<String, dynamic>) onBarberSelected;
+
+  const _FastTrackAvailableTile({
+    required this.time,
+    required this.availableBarbers,
+    required this.onBarberSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF181818),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Horário
+            SizedBox(
+              width: 48,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Linha divisória
+            Container(
+              width: 1,
+              // Altura não declarada - deixa crescer com o conteúdo do Row
+              color: Colors.white.withValues(alpha: 0.06),
+            ),
+            const SizedBox(width: 12),
+
+            // Botões dos Barbeiros Disponíveis
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.6),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Horário disponível',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: availableBarbers.map((barber) {
+                      final name = barber['users']?['name']?.toString() ?? 'Barbeiro';
+                      return InkWell(
+                        onTap: () => onBarberSelected(barber),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.greenAccent,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
