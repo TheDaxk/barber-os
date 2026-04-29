@@ -4,16 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:barber_os/features/auth/presentation/login_screen.dart';
 import 'package:barber_os/core/presentation/main_navigation.dart';
 import 'package:barber_os/core/theme/app_theme.dart';
-
-const supabaseUrl = 'https://akqvqyiyhyuzrnvpvfxt.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrcXZxeWl5aHl1enJudnB2Znh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjE1NzMsImV4cCI6MjA4OTkzNzU3M30.6cgh-3c9BuuTRCxHeOi937YAYhNW8dDWy6jezBHGRJA';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: ".env");
+
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
   runApp(
