@@ -284,7 +284,15 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
       }
     }
 
-    double comissoes = faturamento * 0.40; 
+    double comissoes = 0.0;
+    if (revenueAsync.hasValue) {
+      for (var order in revenueAsync.value!) {
+        final items = order['order_items'] as List? ?? [];
+        for (var item in items) {
+          comissoes += (item['commission_value'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
+    } 
     double lucroEstimado = faturamento - comissoes - despesas;
     double ticketMedio = totalAtendimentos > 0 ? (faturamento / totalAtendimentos) : 0.0;
 
@@ -390,7 +398,7 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                                 accentColor: Colors.greenAccent,
                               ),
                               _buildKpiCard(
-                                title: 'Comissões (40%)',
+                                title: 'Comissões (real)',
                                 value: comissoes,
                                 icon: Icons.handshake_outlined,
                                 accentColor: Colors.orangeAccent,

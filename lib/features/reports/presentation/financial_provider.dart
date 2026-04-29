@@ -37,7 +37,7 @@ final monthlyRevenueProvider = FutureProvider.autoDispose<List<Map<String, dynam
 
   final response = await supabase
       .from('orders')
-      .select('id, total, closed_at, client_name, payment_method, barbers(users(name))')
+      .select('id, total, closed_at, client_name, payment_method, barbers(id, commission_rate, users(name)), order_items(commission_value)')
       .eq('unit_id', unitId)
       .eq('status', 'closed')
       .gte('closed_at', startOfMonth)

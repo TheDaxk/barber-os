@@ -168,6 +168,21 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
 
       final orderId = orderResponse['id'];
 
+      // Buscar commission_rate do barbeiro selecionado
+      double barberCommissionRate = 40.0;
+      if (finalBarberId.isNotEmpty) {
+        try {
+          final barberData = await supabase
+              .from('barbers')
+              .select('commission_rate')
+              .eq('id', finalBarberId)
+              .maybeSingle();
+          barberCommissionRate = (barberData?['commission_rate'] as num?)?.toDouble() ?? 40.0;
+        } catch (_) {
+          barberCommissionRate = 40.0;
+        }
+      }
+
       // Criar order_items para cada serviço selecionado
       if (_selectedServiceIds.isNotEmpty) {
         final servicesData = await ref.read(servicesProvider.future);
@@ -179,7 +194,8 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
             orElse: () => {'name': 'Serviço', 'price': 0.0},
           );
           final servicePrice = (service['price'] as num).toDouble();
-          final commissionPct = (service['commission_pct'] as num?)?.toDouble() ?? 40.0;
+          // Usa a taxa do barbeiro; se não existir, cai para commission_pct do serviço, depois para 40%
+          final commissionPct = barberCommissionRate;
           final commissionValue = servicePrice * (commissionPct / 100);
 
           orderItemsToInsert.add({

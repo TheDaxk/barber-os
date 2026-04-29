@@ -59,15 +59,15 @@ void main() {
     testWidgets('Layout se adapta a diferentes tamanhos de tela',
         (WidgetTester tester) async {
       // Testa com tamanho de tela pequeno (celular)
-      tester.binding.window.physicalSizeTestValue = const Size(360, 640);
-      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1.0;
 
       await tester.pumpWidget(const ProviderScope(child: BarberOSApp()));
 
       expect(find.text('BarberOS'), findsOneWidget);
 
       // Limpa tamanho de teste
-      addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+      addTearDown(tester.view.resetPhysicalSize);
     });
 
     testWidgets('Elementos são visíveis e acessíveis',

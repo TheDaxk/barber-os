@@ -34,7 +34,8 @@
       "Bash(powershell -Command \"New-Item -Path 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\core\\\\utils' -ItemType Directory -Force\")",
       "Bash(powershell -Command \"New-Item -Path 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\features\\\\reports\\\\presentation\\\\export_service.dart' -ItemType File -Force\")",
       "Bash(dir /s /b 'C:\\\\Users\\\\Pedro Lucas\\\\Desktop\\\\projetos\\\\barber_os - atual\\\\lib\\\\features\\\\clients')",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Skill(gsd-code-review)"
     ]
   },
   "enabledPlugins": {

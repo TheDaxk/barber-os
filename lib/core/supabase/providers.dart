@@ -94,7 +94,7 @@ final barbersProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
 
   final response = await supabase
       .from('barbers')
-      .select('id, category, unit_id, users(name)') 
+      .select('id, category, unit_id, commission_rate, users(name)')
       .eq('is_active', true)
       .eq('unit_id', unitId);
       

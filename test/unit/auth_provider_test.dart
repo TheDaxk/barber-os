@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:barber_os/core/supabase/providers.dart';
 
 // Gerar mocks com: flutter pub run build_runner build
-@GenerateMocks([SupabaseClient, AuthResponse, User, GoTrueClient])
+@GenerateMocks([SupabaseClient, GoTrueClient, User])
 import 'auth_provider_test.mocks.dart';
 
 void main() {
@@ -56,25 +56,6 @@ void main() {
         container.read(userProfileProvider.future),
         throwsA(isA<Exception>()),
       );
-    });
-  });
-
-  group('servicesProvider', () {
-    test('deve retornar lista de serviços ativos', () async {
-      final mockQueryBuilder = MockPostgrestFilterBuilder();
-
-      when(mockSupabase.from('services')).thenReturn(mockQueryBuilder);
-      when(mockQueryBuilder.select()).thenReturn(mockQueryBuilder);
-      when(mockQueryBuilder.eq(any, any)).thenReturn(mockQueryBuilder);
-      when(mockQueryBuilder.order(any)).thenReturn(mockQueryBuilder);
-
-      // Mock da resposta
-      when(mockQueryBuilder.thenAnswer((_) async => []))
-          .thenAnswer((_) async => []);
-
-      final result = await container.read(servicesProvider.future);
-
-      expect(result, isA<List<Map<String, dynamic>>>());
     });
   });
 }

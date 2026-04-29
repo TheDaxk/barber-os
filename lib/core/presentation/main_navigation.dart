@@ -153,10 +153,12 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
     ));
 
     // Aba 4: Caixa/Financeiro (Apenas se tiver permissão)
+    int? financialTabIndex;
     if (perm.canAccessFinancial) {
+      financialTabIndex = tabs.length;
       tabs.add(const FinancialScreen());
       navItems.add(const BottomNavigationBarItem(
-        icon: Icon(Icons.account_balance_wallet_outlined), 
+        icon: Icon(Icons.account_balance_wallet_outlined),
         activeIcon: Icon(Icons.account_balance_wallet),
         label: 'Caixa'
       ));
@@ -166,7 +168,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation> {
       _currentIndex = 0;
     }
 
-    final isFinancialTab = perm.canAccessFinancial && _currentIndex == 3;
+    final isFinancialTab = financialTabIndex != null && _currentIndex == financialTabIndex;
     final isAgendaTab = _currentIndex == 1;
 
     return Scaffold(

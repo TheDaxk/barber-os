@@ -56,7 +56,7 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
 
   void _loadSettingsFromUnit(Map<String, dynamic> unitData) {
     if (unitData['business_hours'] != null) {
-      final List<dynamic> hours = unitData['business_hours'];
+      final hours = unitData['business_hours'] as List<dynamic>;
       final diasMap = {
         'segunda': 'Segunda-feira',
         'terca': 'Terça-feira',
@@ -67,17 +67,20 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
         'domingo': 'Domingo',
       };
 
-      for (var h in hours) {
-        final dayKey = h['day'];
-        final dia = diasMap[dayKey];
+      for (final h in hours) {
+        final hMap = h as Map<String, dynamic>;
+        final dayKey = hMap['day'] as String?;
+        final dia = dayKey != null ? diasMap[dayKey] : null;
         if (dia != null) {
-          _isOpen[dia] = h['is_open'] ?? true;
-          if (h['open_time'] != null) {
-            final parts = h['open_time'].toString().split(':');
+          _isOpen[dia] = (hMap['is_open'] as bool?) ?? true;
+          final openTime = hMap['open_time'];
+          final closeTime = hMap['close_time'];
+          if (openTime != null) {
+            final parts = openTime.toString().split(':');
             _openingTimes[dia] = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
           }
-          if (h['close_time'] != null) {
-            final parts = h['close_time'].toString().split(':');
+          if (closeTime != null) {
+            final parts = closeTime.toString().split(':');
             _closingTimes[dia] = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
           }
         }
@@ -129,11 +132,15 @@ class _UnitSettingsScreenState extends ConsumerState<UnitSettingsScreen> {
     try {
       final user = supabase.auth.currentUser!;
       final userData = await supabase.from('users').select('unit_id').eq('id', user.id).single();
-      final unitId = userData['unit_id'];
+      final unitId = userData['unit_id'] as String;
 
       // Get existing business_hours
-      final currentHoursList = await supabase.from('business_hours').select('id, day').eq('unit_id', unitId);
-      final currentHoursMap = { for (var item in currentHoursList) item['day'] as String : item['id'] as String };
+      final currentHoursList = await supabase.from('business_hours').select('id, day').eq('unit_id', unitId) as List<dynamic>;
+      final currentHoursMap = <String, String>{};
+      for (final item in currentHoursList) {
+        final i = item as Map<String, dynamic>;
+        currentHoursMap[i['day'] as String] = i['id'] as String;
+      }
 
       final diasToDb = {
         'Segunda-feira': 'segunda',

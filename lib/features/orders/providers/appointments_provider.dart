@@ -7,9 +7,9 @@ final appointmentsProvider = FutureProvider.autoDispose<List<Map<String, dynamic
   final supabase = ref.watch(supabaseProvider);
   final selectedUnit = ref.watch(selectedUnitIdProvider);
 
-  // Define o ponto de partida como HOJE à meia-noite
+  // Permite ver 60 dias atrás (agendamentos abertos pendentes) + todos os futuros
   final now = DateTime.now();
-  final startOfToday = DateTime(now.year, now.month, now.day).toIso8601String();
+  final lookbackStart = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 60)).toIso8601String();
 
   final userProfile = await ref.watch(userProfileProvider.future);
   final perm = AppPermissions(userProfile);
@@ -27,7 +27,7 @@ final appointmentsProvider = FutureProvider.autoDispose<List<Map<String, dynamic
       .from('orders')
       .select('id, start_time, end_time, client_name, client_id, status, total, barbers(id, users(name)), clients(id, name, is_vip)')
       .eq('unit_id', unitId)
-      .gte('start_time', startOfToday); // Busca de hoje para a frente
+      .gte('start_time', lookbackStart); // Janela de 60 dias atrás
 
   if (!perm.isGlobalAdmin && userProfile['barber_id'] != null) {
     query = query.eq('barber_id', userProfile['barber_id'] as Object);

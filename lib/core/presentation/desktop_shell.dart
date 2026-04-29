@@ -5,6 +5,7 @@ import '../../../features/dashboard/presentation/leader_overview_screen.dart';
 import '../../../features/orders/presentation/schedule_agenda_screen.dart';
 import '../../../features/clients/clients_screen.dart';
 import '../../../features/reports/presentation/financial_screen.dart';
+import '../../../features/reports/presentation/widgets/financial_export_sheet.dart';
 import '../../../features/team/presentation/employees_screen.dart';
 import '../../../features/units/presentation/units_list_screen.dart';
 import '../../../features/settings/menu_screen.dart';
@@ -22,6 +23,9 @@ class DesktopShell extends ConsumerStatefulWidget {
 class _DesktopShellState extends ConsumerState<DesktopShell> {
   int _selectedIndex = 0;
   bool _isRailExpanded = true;
+
+  // Rastreia índice real do Financeiro na navegação filtrada
+  int? _financialTabIndex;
 
   final List<_NavItem> _allNavItems = const [
     _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Visão Geral'),
@@ -58,6 +62,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
         // Filtrar itens de navegação baseados em permissão
         final List<_NavItem> visibleNavItems = [];
         final List<Widget> visibleScreens = [];
+        _financialTabIndex = null;
 
         // Itens comuns do Desktop (Dono)
         visibleNavItems.add(_allNavItems[0]); visibleScreens.add(_allScreens[0]); // Visão Geral
@@ -71,6 +76,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
           visibleNavItems.add(_allNavItems[4]); visibleScreens.add(_allScreens[4]);
         }
         if (perm.canAccessFinancial) {
+          _financialTabIndex = visibleNavItems.length;
           visibleNavItems.add(_allNavItems[5]); visibleScreens.add(_allScreens[5]);
         }
         if (perm.canManageTeam) {
@@ -174,9 +180,41 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
               Expanded(
                 child: Container(
                   color: const Color(0xFF121212),
-                  child: IndexedStack(
-                    index: _selectedIndex,
-                    children: visibleScreens,
+                  child: Column(
+                    children: [
+                      // AppBar com botão de export para a aba financeira
+                      Container(
+                        height: 56,
+                        padding: const EdgeInsets.only(right: 8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF161616),
+                          border: Border(bottom: BorderSide(color: Colors.white10)),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                visibleNavItems[_selectedIndex].label,
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (_financialTabIndex != null && _selectedIndex == _financialTabIndex)
+                              IconButton(
+                                icon: const Icon(Icons.file_download_outlined, color: Colors.grey),
+                                tooltip: 'Exportar relatório',
+                                onPressed: () => FinancialExportSheet.show(context),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: IndexedStack(
+                          index: _selectedIndex,
+                          children: visibleScreens,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

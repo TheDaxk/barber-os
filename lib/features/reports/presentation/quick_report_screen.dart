@@ -31,7 +31,7 @@ class _QuickReportScreenState extends ConsumerState<QuickReportScreen> {
       // Buscar comandas do dia
       final ordersResponse = await supabase
           .from('orders')
-          .select('total, status, barbers(users(name))')
+          .select('total, status, barbers(commission_rate, users(name))')
           .gte('start_time', startOfToday)
           .lte('start_time', endOfToday);
 
@@ -51,9 +51,10 @@ class _QuickReportScreenState extends ConsumerState<QuickReportScreen> {
         if (status == 'closed') {
           comandasFechadas++;
           faturamento += total;
-          // Calcula comissão (40% padrão)
+          // Calcula comissão usando a taxa individual do barbeiro
+          final rate = (order['barbers']?['commission_rate'] as num?)?.toDouble() ?? 40.0;
           comissoesPorBarbeiro[barberName] =
-              (comissoesPorBarbeiro[barberName] ?? 0) + (total * 0.40);
+              (comissoesPorBarbeiro[barberName] ?? 0) + (total * (rate / 100));
         } else if (status == 'open') {
           comandasAbertas++;
         }
