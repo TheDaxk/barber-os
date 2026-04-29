@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/supabase/providers.dart';
+import '../../core/presentation/widgets/page_header.dart';
 import '../../core/rbac/app_permissions.dart';
 import '../services/create_service_screen.dart';
 import '../team/presentation/employees_screen.dart';
-import '../auth/presentation/login_screen.dart'; // Import do Login para o Logout
+import '../auth/presentation/login_screen.dart';
 import '../products/presentation/products_management_screen.dart';
 import 'edit_profile_screen.dart';
 import 'unit_settings_screen.dart';
@@ -41,6 +42,10 @@ class MenuScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
+              const PageHeader(
+                title: 'Configurações',
+                subtitle: 'Gestão e preferências',
+              ),
               // ===============================
               // SESSÃO DO PERFIL
               // ===============================

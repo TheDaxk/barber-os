@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/supabase/providers.dart';
+import '../../../core/presentation/widgets/page_header.dart';
 import 'financial_provider.dart';
 
 class FinancialScreen extends ConsumerStatefulWidget {
@@ -346,6 +347,10 @@ class _FinancialScreenState extends ConsumerState<FinancialScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const PageHeader(
+                        title: 'Financeiro',
+                        subtitle: 'Receitas e despesas do mês',
+                      ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),

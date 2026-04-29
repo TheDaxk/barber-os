@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/supabase/providers.dart';
+import '../../core/presentation/widgets/page_header.dart';
 import 'providers/clients_provider.dart';
 import 'presentation/client_detail_screen.dart';
 import '../../core/rbac/app_permissions.dart';
@@ -107,8 +108,10 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Meus Clientes', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
+            const PageHeader(
+              title: 'Clientes',
+              subtitle: 'Sua base de clientes',
+            ),
 
             // Barra de Pesquisa
             TextField(
