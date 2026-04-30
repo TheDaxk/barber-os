@@ -119,6 +119,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  Future<void> _addServiceItem(Map<String, dynamic> service) async {
+    try {
+      final supabase = ref.read(supabaseProvider);
+      final item = await addOrderItem(
+        supabase: supabase,
+        orderId: widget.appointment['id'] as String,
+        itemType: 'service',
+        referenceId: service['id'] as String,
+        name: service['name'] as String,
+        unitPrice: (service['price'] as num).toDouble(),
+        quantity: 1,
+        commissionPct: 0,
+      );
+      setState(() {
+        _orderItems.add(item);
+        _calculateSubtotal();
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao adicionar serviço: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Future<void> _addExtra() async {
     final name = _extraNameController.text.trim();
     final value = double.tryParse(_extraValueController.text.replaceAll(',', '.'));
@@ -245,6 +271,56 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
+  void _showServicesBottomSheet(List<Map<String, dynamic>> services) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Adicionar Serviço', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Flexible(
+              child: services.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Text('Nenhum serviço disponível', style: TextStyle(color: Colors.grey)),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: services.length,
+                      itemBuilder: (context, index) {
+                        final service = services[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blue.withValues(alpha: 0.2),
+                            child: const Icon(Icons.cut, color: Colors.blue, size: 20),
+                          ),
+                          title: Text(service['name'] as String),
+                          subtitle: Text('R\$ ${(service['price'] as num).toStringAsFixed(2)}'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.add_circle, color: Colors.green),
+                            onPressed: () {
+                              _addServiceItem(service);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _discountController.dispose();
@@ -289,6 +365,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final clientName = widget.appointment['client_name'] ?? 'Cliente Avulso';
     final barberName = widget.appointment['barbers']?['users']?['name'] ?? 'Desconhecido';
     final productsAsync = ref.watch(productsProvider);
+    final servicesAsync = ref.watch(servicesBySectorProvider(null));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: Colors.transparent, elevation: 0),
@@ -321,6 +398,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const Text('Itens da Comanda', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 Row(
                   children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        servicesAsync.whenData((services) {
+                          _showServicesBottomSheet(services);
+                        });
+                      },
+                      icon: const Icon(Icons.cut, size: 18),
+                      label: const Text('Serviço'),
+                      style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                    ),
                     TextButton.icon(
                       onPressed: () {
                         productsAsync.whenData((products) {
