@@ -44,11 +44,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _loadOrderItems();
   }
 
+  bool _originalHasServiceItems = false;
+
   Future<void> _loadOrderItems() async {
     setState(() => _loadingItems = true);
     try {
       final supabase = ref.read(supabaseProvider);
       final items = await fetchOrderItems(supabase, widget.appointment['id'] as String);
+      _originalHasServiceItems = items.any((item) => item['item_type'] == 'service');
       setState(() {
         _orderItems = items;
         _calculateSubtotal();
@@ -61,18 +64,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _calculateSubtotal() {
-    // Verifica se existem itens do tipo 'service' nos order_items
-    final hasServiceItems = _orderItems.any((item) => item['item_type'] == 'service');
-
     double total = 0.0;
-    if (hasServiceItems) {
-      // Se os serviços estão nos order_items, soma tudo normalmente
+    if (_originalHasServiceItems) {
+      // Se os serviços originais já estão nos order_items, a soma pura dos itens representa o total
       for (var item in _orderItems) {
         total += (item['unit_price'] as num).toDouble() * (item['quantity'] as num).toInt();
       }
     } else {
-      // Se os serviços NÃO estão nos order_items (dados antigos ou falha na inserção),
-      // preserva o total base do agendamento e soma apenas extras/produtos
+      // Se a comanda antiga não tinha os serviços detalhados em order_items, o valor 
+      // dos serviços originais reside em _baseTotal. Somamos ele + qualquer item adicionado agora.
       total = _baseTotal;
       for (var item in _orderItems) {
         total += (item['unit_price'] as num).toDouble() * (item['quantity'] as num).toInt();
