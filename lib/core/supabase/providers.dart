@@ -74,8 +74,40 @@ final servicesBySectorProvider = FutureProvider.autoDispose
     query = query.eq('sector', sector);
   }
 
-  final response = await query.order('name');
-  return List<Map<String, dynamic>>.from(response);
+  final response = await query;
+  final services = List<Map<String, dynamic>>.from(response);
+
+  try {
+    // Inteligência: Busca os itens mais recentes para recomendar os mais utilizados
+    final recentItems = await supabase
+        .from('order_items')
+        .select('reference_id')
+        .eq('item_type', 'service')
+        // Tenta ordenar pelo ID (geralmente sequencial ou UUID) para pegar os mais novos
+        .order('id', ascending: false)
+        .limit(200);
+
+    final freq = <String, int>{};
+    for (var item in recentItems) {
+      final refId = item['reference_id']?.toString();
+      if (refId != null) {
+        freq[refId] = (freq[refId] ?? 0) + 1;
+      }
+    }
+
+    // Ordena: serviços mais usados primeiro. Em caso de empate, alfabeticamente.
+    services.sort((a, b) {
+      final fA = freq[a['id'].toString()] ?? 0;
+      final fB = freq[b['id'].toString()] ?? 0;
+      if (fB != fA) return fB.compareTo(fA);
+      return (a['name']?.toString() ?? '').compareTo(b['name']?.toString() ?? '');
+    });
+  } catch (e) {
+    // Fallback de segurança: ordena apenas por nome se a inteligência falhar
+    services.sort((a, b) => (a['name']?.toString() ?? '').compareTo(b['name']?.toString() ?? ''));
+  }
+
+  return services;
 });
 
 
